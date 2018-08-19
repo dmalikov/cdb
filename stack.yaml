@@ -1,0 +1,10 @@
+resolver: lts-12.1
+packages:
+  - '.'
+  - './example'
+extra-deps:
+  - fmt-0.6
+  - mime-0.4.0.2
+allow-newer: true
+ghc-options:
+  "$locals": -fhide-source-paths

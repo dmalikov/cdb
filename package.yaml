@@ -1,0 +1,88 @@
+name: cdb
+version: 0.1
+synopsis: Incomplete Azure Cosmos DB client
+description: See README
+maintainer: Dmitry Malikov <malikov.d.y@gmail.com>
+category: Web
+license: BSD3
+
+ghc-options:
+  - -Wall
+  - -fhide-source-paths
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+  - -fdefer-typed-holes
+
+dependencies:
+  - base >= 4.10.1
+  - aeson
+  - bytestring
+  - http-client
+  - http-types
+  - lens
+  - lens-aeson
+  - mtl
+  - safe-exceptions
+  - text
+  - time
+  - transformers
+  - unordered-containers
+  - wreq
+
+default-extensions:
+  - DuplicateRecordFields
+  - GADTs
+  - OverloadedStrings
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TypeApplications
+  - ViewPatterns
+
+library:
+  source-dirs: src
+  dependencies:
+    - case-insensitive
+    - cryptohash-sha256
+    - mime
+    - random
+    - uri-encode
+  exposed-modules:
+    - Network.CosmosDB
+    - Network.CosmosDB.Types
+    - Network.CosmosDB.Model.Collection
+    - Network.CosmosDB.Model.Database
+    - Network.CosmosDB.Model.IndexingPolicy
+    - Network.CosmosDB.Auth
+    - Network.CosmosDB.Request
+    - Network.CosmosDB.Retry
+    - Network.CosmosDB.Client.Collections
+    - Network.CosmosDB.Client.Databases
+    - Network.CosmosDB.Client.Documents
+    - Network.CosmosDB.Internal
+  default-extensions:
+    - DefaultSignatures
+    - DeriveGeneric
+    - GeneralizedNewtypeDeriving
+    - StrictData
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test/spec/
+    dependencies:
+      - aeson-qq
+      - cdb
+      - hspec
+      - hspec-expectations
+    ghc-options:
+      - -fno-warn-missing-fields
+      - -threaded
+      - -with-rtsopts=-N
+    default-extensions:
+      - DuplicateRecordFields
+      - GADTs
+      - OverloadedStrings
+      - RecordWildCards

@@ -1,0 +1,90 @@
+cabal-version: >= 1.10
+
+-- This file has been generated from package.yaml by hpack version 0.29.7.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: b7cc48ab9836a0ccc9ec1b4de4c7820c70d888a7cf3674c6417111cd2cc0d3ac
+
+name:                lockers
+version:             0.1
+synopsis:            Library for concurrent resource acquiring/releasing on top of Azure Cosmos DB.
+description:         No description providedA
+license:             BSD3
+license-file:        LICENSE
+maintainer:          Dmitry Malikov <malikov.d.y@gmail.com>
+category:            Web
+build-type:          Simple
+
+library
+  hs-source-dirs:
+      src
+  exposed-modules:
+      Network.Locker
+  other-modules:
+      Paths_lockers
+  build-depends:
+      aeson
+    , base >=4.10.1
+    , cdb
+    , http-types
+    , lens
+    , lens-aeson
+    , random
+    , safe-exceptions
+    , text
+    , transformers
+    , uuid
+    , wreq
+  default-language: Haskell2010
+  default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns
+  ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes
+
+executable lockers
+  main-is: Main.hs
+  other-modules:
+      Paths_lockers
+  hs-source-dirs:
+      exe
+  build-depends:
+      aeson
+    , async
+    , base >=4.10.1
+    , cdb
+    , http-types
+    , lens
+    , lens-aeson
+    , lockers
+    , random
+    , text
+    , wreq
+  default-language: Haskell2010
+  default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns
+  ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Network.LockerSpec
+      Paths_lockers
+  hs-source-dirs:
+      test/spec/
+  build-depends:
+      HUnit
+    , aeson
+    , aeson-qq
+    , async
+    , base >=4.10.1
+    , cdb
+    , hspec
+    , http-types
+    , lens
+    , lens-aeson
+    , lockers
+    , random
+    , text
+    , wreq
+  default-language: Haskell2010
+  default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DuplicateRecordFields GADTs OverloadedStrings RecordWildCards
+  ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes -fno-warn-missing-fields -threaded -with-rtsopts=-N

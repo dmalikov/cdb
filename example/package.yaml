@@ -1,0 +1,75 @@
+name: lockers
+version: 0.1
+synopsis: Library for concurrent resource acquiring/releasing on top of Azure Cosmos DB.
+description: No description providedA
+maintainer: Dmitry Malikov <malikov.d.y@gmail.com>
+category: Web
+license: BSD3
+
+ghc-options:
+  - -Wall
+  - -fhide-source-paths
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+  - -fdefer-typed-holes
+
+dependencies:
+  - base >= 4.10.1
+  - aeson
+  - cdb
+  - http-types
+  - lens
+  - lens-aeson
+  - random
+  - text
+  - wreq
+
+default-extensions:
+  - DuplicateRecordFields
+  - GADTs
+  - LambdaCase
+  - OverloadedStrings
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TypeApplications
+  - ViewPatterns
+
+library:
+  source-dirs: src
+  dependencies:
+    - safe-exceptions
+    - transformers
+    - uuid
+  exposed-modules:
+    - Network.Locker
+
+executable:
+  main: Main.hs
+  source-dirs: exe
+  dependencies:
+    - async
+    - lockers
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test/spec/
+    dependencies:
+      - aeson-qq
+      - async
+      - lockers
+      - hspec
+      - HUnit
+      - wreq
+    ghc-options:
+      - -fno-warn-missing-fields
+      - -threaded
+      - -with-rtsopts=-N
+    default-extensions:
+      - DuplicateRecordFields
+      - GADTs
+      - OverloadedStrings
+      - RecordWildCards

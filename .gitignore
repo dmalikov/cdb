@@ -1,0 +1,8 @@
+dist
+dist-newstyle
+.ghc.environment*
+tags
+result
+cabal.project.local*
+.stack-work
+.hspec-failures
