@@ -65,6 +65,8 @@ tests:
       - HUnit
       - wreq
     ghc-options:
+      - -fno-warn-type-defaults
+      - -fno-warn-orphans 
       - -fno-warn-missing-fields
       - -threaded
       - -with-rtsopts=-N

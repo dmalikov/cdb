@@ -20,6 +20,7 @@ import           System.Environment (getEnv)
 import           Test.Hspec
 import           Test.HUnit.Base (assertFailure)
 
+import Network.CosmosDB.Retry
 import Network.Locker
 
 main :: IO ()
@@ -42,8 +43,8 @@ spec = parallel $ beforeAll newEnv $ aroundWith withCollection $ do
           let leasesColl = CollectionId ((unCollectionId coll) <> "_leases")
           e <- getCollection conn testdb leasesColl
           e `shouldSatisfy` unexpectedCode notFound404
-          void $ mklock acc key testdb coll
-          Right (Collection {..}) <- getCollection conn testdb leasesColl
+          void (mklock' acc key testdb coll)
+          Collection {..} <- shouldBeRight =<< getCollection conn testdb leasesColl
           id `shouldBe` leasesColl
           defaultTtl `shouldBe` Just (-1)
 
@@ -189,11 +190,18 @@ mklock'
   -> DatabaseId   -- ^ database name
   -> CollectionId -- ^ resources collection
   -> IO Locker
-mklock' accountName masterKey dbId resources = mklock accountName masterKey dbId resources
-  >>= onLeft "failed to create locker"
+mklock' accountName masterKey dbId resources =
+  (retry 3 (\(SomeException _) -> False) (\_ _ -> pure 0) is429 (\_ _ -> pure 15000) action)
+    >>= onLeft "failed to create locker"
+ where
+  action = mklock accountName masterKey dbId resources
+  is429 (CosmosDbError (UnexpectedResponseStatusCode r))
+    | r ^. W.responseStatus == tooManyRequests429 = True
+    | otherwise = False
+  is429 _ = False
 
 onLeft :: Show e => String -> Either e a -> IO a
-onLeft s =  \case
+onLeft s = \case
   Left e -> assertFailure (s ++ " " ++ show e)
   Right a -> pure a
 
@@ -221,13 +229,18 @@ withCollection action env =
 createTestCollection :: Env -> IO CollectionId
 createTestCollection Env {..} = do
   coll <- CollectionId <$> rand_name
-  shouldBeRight_ =<< createCollection conn testdb (CollectionCreationOptions
+  shouldBeRight_ =<< retry 3 (\(SomeException _) -> False) (\_ _ -> pure 0) is429 (\_ _ -> pure 15000) (action coll)
+  pure coll
+ where
+  action coll = createCollection conn testdb (CollectionCreationOptions
     { id = coll
     , indexingPolicy = Nothing
     , partitionKey = Nothing
     , defaultTtl = Nothing
     })
-  pure coll
+  is429 (UnexpectedResponseStatusCode r)
+    | r ^. W.responseStatus == tooManyRequests429 = True
+    | otherwise = False
 
 deleteTestCollection :: Env -> CollectionId -> IO ()
 deleteTestCollection Env {..} coll = do

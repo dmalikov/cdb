@@ -24,7 +24,7 @@ import Network.CosmosDB.Internal
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/create-a-document>
 createDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionId
@@ -43,7 +43,7 @@ createDocument c dbId collId value = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/get-a-document>
 getDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionId
@@ -64,7 +64,7 @@ getDocument c dbId collId docId = send c $
 --
 -- It's a responsibility of a caller to provide 'DocumentId' matching the `id` field of the document.
 replaceDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionId
@@ -84,7 +84,7 @@ replaceDocument c dbId collId docId value = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/delete-a-document>
 deleteDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> Maybe Text -- ^ etag to match, will be sent as "If-Match" header
   -> DatabaseId
@@ -104,7 +104,7 @@ deleteDocument c mEtag dbId collId docId = send_ c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/query-documents>
 queryDocuments
-  :: (MonadThrow m, MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadThrow m, MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionId

@@ -18,6 +18,7 @@ module Network.CosmosDB.Types
   , MonadHttp(..)
   , MonadDelay(..)
   , MonadRandom(..)
+  , MonadLog(..)
   , ResponseException(..)
   , Error(..)
   , isUnexpectedCode
@@ -38,6 +39,7 @@ import qualified Data.HashMap.Strict as M
 import           Data.Semigroup ((<>))
 import           Data.String (IsString)
 import           Data.Text (Text)
+import qualified Data.Text.IO as T
 import           Data.Time.Clock
 import           Data.Typeable (Typeable)
 import           Network.HTTP.Types.Status
@@ -134,6 +136,18 @@ instance MonadRandom IO where
 
 instance MonadRandom m => MonadRandom (StateT w m)
 instance MonadRandom m => MonadRandom (ReaderT s m)
+
+class Monad m => MonadLog m where
+  logMessage :: Text -> m ()
+
+  default logMessage :: (MonadTrans t, MonadLog m', m ~ t m') => Text -> m ()
+  logMessage x = lift (logMessage x)
+
+instance MonadLog IO where
+  logMessage = T.putStrLn
+
+instance MonadLog m => MonadLog (StateT w m)
+instance MonadLog m => MonadLog (ReaderT s m)
 
 newtype DatabaseId   = DatabaseId   { unDatabaseId   :: Text } deriving (Eq, IsString, Show)
 newtype CollectionId = CollectionId { unCollectionId :: Text } deriving (Eq, IsString, Show)

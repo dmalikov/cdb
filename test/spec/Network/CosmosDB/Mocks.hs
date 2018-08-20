@@ -35,12 +35,12 @@ data Request = Request
 
 data Agg = Agg
   { _next :: [Response BSL.ByteString]
-  , _rr :: [(Request, Response BSL.ByteString)]
+  , _rr   :: [(Request, Response BSL.ByteString)]
   } deriving (Show)
 makeLenses ''Agg
 
 newtype HttpT m a = HttpT (StateT Agg m a)
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadTime, MonadDelay, MonadRandom)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadTime, MonadDelay, MonadRandom, MonadLog)
 
 runHttpT :: [Response BSL.ByteString] -> HttpT m a -> m (a, Agg)
 runHttpT responses (HttpT x) = runStateT x $ Agg responses []
@@ -67,7 +67,7 @@ instance Monad m => MonadHttp (HttpT m) where
   delete opts' _ path'       = mocky opts' path' "delete" Nothing
 
 newtype TimeT m a = TimeT (ReaderT UTCTime m a)
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadDelay, MonadRandom)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadDelay, MonadRandom, MonadLog)
 
 runTimeT :: UTCTime -> TimeT m a -> m a
 runTimeT time (TimeT x) = runReaderT x time
@@ -75,20 +75,29 @@ runTimeT time (TimeT x) = runReaderT x time
 instance Monad m => MonadTime (TimeT m) where
   getTime = TimeT ask
 
-newtype DelayT m a = DelayT (ReaderT Int m a)
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadTime, MonadRandom)
+newtype DelayT m a = DelayT (ReaderT () m a)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadTime, MonadRandom, MonadLog)
 
-runDelayT :: Int -> DelayT m a -> m a
-runDelayT i (DelayT x) = runReaderT x i
+runDelayT :: DelayT m a -> m a
+runDelayT (DelayT x) = runReaderT x ()
 
 instance Monad m => MonadDelay (DelayT m) where
   delay _ = DelayT (void ask)
 
 newtype RandomT m a = RandomT (ReaderT Int m a)
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadTime, MonadDelay)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadTime, MonadDelay, MonadLog)
 
 runRandomT :: Int -> RandomT m a -> m a
 runRandomT value (RandomT x) = runReaderT x value
 
 instance Monad m => MonadRandom (RandomT m) where
   randomLoHi _ = RandomT ask
+
+newtype LogT m a = LogT (ReaderT () m a)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadThrow, MonadCatch, MonadHttp, MonadTime, MonadRandom)
+
+instance Monad m => MonadLog (LogT m) where
+  logMessage _ = LogT (void ask)
+
+runLogT :: LogT m a -> m a
+runLogT (LogT x) = runReaderT x ()

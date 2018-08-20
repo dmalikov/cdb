@@ -32,7 +32,7 @@ import Network.CosmosDB.Internal
 -- In case of response status code not matching the expected one set in '_successStatusCode'.
 -- In case of json parsing exception, 'DeserializationException' would be thrown.
 send
-  :: (MonadCatch m, MonadTime m, MonadHttp m, FromJSON a, MonadDelay m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, FromJSON a, MonadDelay m, MonadLog m)
   => Connection
   -> RequestOptions m
   -> m (Either Error a)
@@ -46,7 +46,7 @@ send c ro = parse =<< sendAndRetry c ro
 
 -- | Void 'send'.
 send_
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m)
   => Connection
   -> RequestOptions m
   -> m (Either Error ())
@@ -54,7 +54,7 @@ send_ c ro = void <$> sendAndRetry c ro
 
 -- | 'sendRequest' being retried.
 sendAndRetry
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m)
   => Connection
   -> RequestOptions m
   -> m (Either Error (W.Response BSL.ByteString))
@@ -62,7 +62,7 @@ sendAndRetry c ro@RequestOptions {..} = retryHttp _retryOptions (sendRequest c r
 
 -- | Send request without retries.
 sendRequest
-  :: (MonadThrow m, MonadTime m, MonadHttp m)
+  :: (MonadThrow m, MonadTime m, MonadHttp m, MonadLog m)
   => Connection
   -> RequestOptions m
   -> m (Either Error (W.Response BSL.ByteString))
@@ -77,11 +77,13 @@ sendRequest c ro@RequestOptions {..} = do
                 & W.header "x-ms-date"     .~ [ T.encodeUtf8 time      ]
                 & W.header "Accept"        .~ [ "application/json"     ]
                 & W.checkResponse          ?~ (\_ _ -> pure ())
+  logMessage (ppReq time _requestMethod uri)
   r <- case _requestMethod of
     POST body -> post   wopts (_session c) uri body
     PUT body  -> put    wopts (_session c) uri body
     GET       -> get    wopts (_session c) uri
     DELETE    -> delete wopts (_session c) uri
+  logMessage (ppRes time r)
   if r ^. W.responseStatus == _successStatusCode
     then pure (Right r)
     else pure (Left (UnexpectedResponseStatusCode r))
@@ -99,3 +101,9 @@ baseUri accountName = "https://" <> accountName <> ".documents.azure.com:443"
 --- Tue, 01 Nov 1994 08:12:31 GMT
 timeFormat :: IsString a => a
 timeFormat = "%a, %d %b %Y %H:%M:%S GMT"
+
+ppReq :: Text -> RequestMethod -> String -> Text
+ppReq t rm uri = "[" <> t <> "] >>> " <> rmLiteral rm <> " " <> T.pack uri
+
+ppRes :: Text -> W.Response a -> Text
+ppRes t r = "[" <> t <> "] <<< " <> T.pack (show (r ^. W.responseStatus ^. W.statusCode))

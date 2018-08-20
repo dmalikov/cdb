@@ -60,8 +60,9 @@ spec = parallel $ do
                   , responseBody    = encode resp
                   , responseVersion = http11
                   })]
-              & runDelayT 10
+              & runDelayT 
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -120,8 +121,9 @@ spec = parallel $ do
                   , responseBody    = encode resp
                   , responseVersion = http11
                   })]
-              & runDelayT 10
+              & runDelayT 
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -163,8 +165,9 @@ spec = parallel $ do
                   , responseBody    = encode resp
                   , responseVersion = http11
                   })]
-              & runDelayT 10
+              & runDelayT 
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -190,8 +193,9 @@ spec = parallel $ do
                   { responseStatus  = mkStatus 204 ""
                   , responseBody    = ""
                   })]
-              & runDelayT 10
+              & runDelayT 
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (_, rragg) -> do
@@ -255,8 +259,9 @@ spec = parallel $ do
                   , responseBody    = encode resp
                   , responseVersion = http11
                   })]
-              & runDelayT 10
+              & runDelayT 
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do

@@ -7,6 +7,8 @@ import           Control.Exception.Safe
 import           Control.Lens ((^?), (^.))
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as BSL
+import           Data.Semigroup ((<>))
+import qualified Data.Text as T
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Status
 import qualified Network.Wreq as W
@@ -14,9 +16,9 @@ import qualified Network.Wreq as W
 import Network.CosmosDB.Types
 
 -- | Retry http request with given options.
-retryHttp :: (MonadDelay m, MonadCatch m)
+retryHttp :: (MonadDelay m, MonadCatch m, MonadLog m)
   => RetryOptions m -> m (Either Error a) -> m (Either Error a)
-retryHttp RetryOptions {..} = retry 3 isTimeout (const nextBackoff) isTransientError responseBackoff
+retryHttp RetryOptions {..} = retry retries isTimeout (const nextBackoff) isTransientError responseBackoff
 
  where
 
@@ -43,7 +45,7 @@ retryHttp RetryOptions {..} = retry 3 isTimeout (const nextBackoff) isTransientE
   parseBackoff r = maybe defaultThrottlingBackoff fst (BSC.readInt =<< r ^? W.responseHeader "x-ms-retry-after-ms")
 
 -- | Retry action.
-retry :: (MonadDelay m, MonadCatch m, Exception e)
+retry :: (MonadDelay m, MonadCatch m, Exception e, MonadLog m)
   => Int -- ^ retries
   -> (e -> Bool)         -- ^ transient exception
   -> (e -> Int -> m Int) -- ^ transient exception backoff
@@ -53,17 +55,19 @@ retry :: (MonadDelay m, MonadCatch m, Exception e)
   -> m (Either l a)
 retry retries isTransientException backoffException isTransientError backoffError action = go 1
  where
-  go attempt | attempt == retries = action
+  go attempt | attempt == retries + 1 = action
   go attempt = do
     res <- catch action (\e -> if isTransientException e
                                  then do
                                    backoff <- backoffException e attempt
+                                   logMessage ("retrying transient exception, attempt=" <> T.pack (show attempt) <> ", backoff=" <> T.pack (show backoff))
                                    delay backoff
                                    go (attempt + 1)
                                  else throw e)
     case res of
       Left e | isTransientError e -> do
            backoff <- backoffError e attempt
+           logMessage ("retrying transient error, attempt=" <> T.pack (show attempt) <> ", backoff=" <> T.pack (show backoff))
            delay backoff
            go (attempt + 1)
       r -> pure r

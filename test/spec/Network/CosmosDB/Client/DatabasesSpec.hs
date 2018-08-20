@@ -56,8 +56,9 @@ spec = parallel $
                , _count: 2
                }
             |]})]
-           & runDelayT 10
+           & runDelayT
            & runRandomT 10
+           & runLogT
            & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -105,8 +106,9 @@ spec = parallel $
              { responseStatus = mkStatus 404 ""
              , responseBody = ""
              } ]
-          & runDelayT 10
+          & runDelayT 
           & runRandomT 10
+           & runLogT
           & runTimeT someTime)
           `shouldSatisfy` unexpectedCode notFound404
 

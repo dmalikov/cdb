@@ -13,7 +13,7 @@ import Network.CosmosDB.Internal
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/create-a-collection>
 createCollection
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionCreationOptions
@@ -31,7 +31,7 @@ createCollection c dbId cco = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/list-collections>
 listCollections
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> m (Either Error DocumentCollections)
@@ -48,7 +48,7 @@ listCollections c dbId = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/get-a-collection>
 getCollection
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionId
@@ -66,7 +66,7 @@ getCollection c dbId collId = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/delete-a-collection>
 deleteCollection
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> DatabaseId
   -> CollectionId

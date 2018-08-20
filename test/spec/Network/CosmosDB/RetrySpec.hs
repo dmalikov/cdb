@@ -59,8 +59,9 @@ spec = do
                  |]
                }
              ]
-           & runDelayT 10
+           & runDelayT
            & runRandomT 10
+           & runLogT
            & runTimeT someTime of
       Left e -> error (show e)
       Right (_, rragg) -> do

@@ -14,7 +14,7 @@ import Network.CosmosDB.Internal
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/list-databases>
 listDatabases
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
   => Connection
   -> m (Either Error Databases)
 listDatabases c = send c $

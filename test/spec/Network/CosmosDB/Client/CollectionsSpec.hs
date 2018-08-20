@@ -72,8 +72,9 @@ spec = parallel $ do
                   , _conflicts: "conflicts/"
                   }
                   |]})]
-              & runDelayT 10
+              & runDelayT
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -204,8 +205,9 @@ spec = parallel $ do
                     , _count: 2
                     }
                   |]})]
-              & runDelayT 10
+              & runDelayT
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -339,8 +341,9 @@ spec = parallel $ do
                   , _conflicts: "conflicts/"
                   }
                   |]})]
-              & runDelayT 10
+              & runDelayT
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
@@ -404,8 +407,9 @@ spec = parallel $ do
                   { responseStatus = mkStatus 204 ""
                   , responseBody = ""
                   }]
-              & runDelayT 10
+              & runDelayT
               & runRandomT 10
+              & runLogT
               & runTimeT someTime of
       Left e -> error (show e)
       Right (value, rragg) -> do
