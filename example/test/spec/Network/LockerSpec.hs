@@ -27,7 +27,7 @@ main :: IO ()
 main = hspec spec
 
 spec :: Spec
-spec = parallel $ beforeAll newEnv $ aroundWith withCollection $ do
+spec = beforeAll newEnv $ aroundWith withCollection $ do
 
     describe "mklock" $ do
       context "when resource collection doesn't exist" $

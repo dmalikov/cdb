@@ -68,8 +68,6 @@ tests:
       - -fno-warn-type-defaults
       - -fno-warn-orphans 
       - -fno-warn-missing-fields
-      - -threaded
-      - -with-rtsopts=-N
     default-extensions:
       - DuplicateRecordFields
       - GADTs

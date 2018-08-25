@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 186ef2c99ca560fb6b9ba14208539dfd9150412706815eb8f81503652242e77f
+-- hash: 41a2f3a33f4fca5dcac8f18553ff0f7b530830017028e1d9ebc651269964c314
 
 name:                lockers
 version:             0.1
@@ -87,4 +87,4 @@ test-suite spec
     , wreq
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DuplicateRecordFields GADTs OverloadedStrings RecordWildCards
-  ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes -fno-warn-type-defaults -fno-warn-orphans -fno-warn-missing-fields -threaded -with-rtsopts=-N
+  ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes -fno-warn-type-defaults -fno-warn-orphans -fno-warn-missing-fields
