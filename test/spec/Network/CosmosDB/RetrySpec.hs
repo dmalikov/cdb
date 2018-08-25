@@ -19,6 +19,9 @@ import Test.Hspec
 
 import SpecHelpers
 
+{-# ANN module ("HLint: ignore Redundant do" :: String) #-}
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
+
 main :: IO ()
 main = hspec spec
 

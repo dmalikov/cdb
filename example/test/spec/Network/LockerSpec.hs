@@ -23,6 +23,10 @@ import SpecHelpers
 import Network.CosmosDB.Retry
 import Network.Locker
 
+{-# ANN module ("HLint: ignore Redundant do" :: String) #-}
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
+
 main :: IO ()
 main = hspec spec
 
@@ -40,7 +44,7 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
 
       context "when lease collection doesn't exist" $
         it "creates it with proper ttl" $ \(Env {..}, coll) -> do
-          let leasesColl = CollectionId ((unCollectionId coll) <> "_leases")
+          let leasesColl = CollectionId (unCollectionId coll <> "_leases")
           e <- getCollection conn testdb leasesColl
           e `shouldSatisfy` unexpectedCode Http.notFound404
           void (mklock' acc key testdb coll)
@@ -61,7 +65,7 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
           shouldBeRight_ =<< add locker doc
           locked <- shouldBeRight =<< lock locker 10
           payload locked `shouldBe` doc
-          locked `shouldSatisfy` \(LRes {..}) -> not (Data.Text.null leaseEtag)
+          locked `shouldSatisfy` \LRes {..} -> not (Data.Text.null leaseEtag)
 
       context "when all users are locked" $
         it "returns Nothing immediately" $ \(Env {..}, coll) -> do
@@ -74,8 +78,8 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
       context "when one user is locked and another is disabled" $ do
         it "returns nothing" $ \(Env {..}, coll) -> do
           locker <- mklock' acc key testdb coll
-          shouldBeRight_ =<< add locker ([aesonQQ| { username: "alice", password: "password" } |])
-          shouldBeRight_ =<< add locker ([aesonQQ| { username: "bob", password: "password" } |])
+          shouldBeRight_ =<< add locker [aesonQQ| { username: "alice", password: "password" } |]
+          shouldBeRight_ =<< add locker [aesonQQ| { username: "bob", password: "password" } |]
           shouldBeRight_ =<< disable locker "username" "bob"
           res <- shouldBeRight =<< lock locker (20 * 60)
           payload res ^. (L.key "username" . L._String) `shouldBe` "alice"
@@ -158,7 +162,7 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
       context "when disabled resource is enabled back" $ do
         it "could be locked" $ \(Env {..}, coll) -> do
           locker <- mklock' acc key testdb coll
-          shouldBeRight_ =<< add locker ([aesonQQ| { username: "alice", password: "password" } |])
+          shouldBeRight_ =<< add locker [aesonQQ| { username: "alice", password: "password" } |]
           shouldBeRight_ =<< disable locker "username" "alice"
           lock locker 10 `shouldReturn` Left NoFreeResources
           shouldBeRight_ =<< enable locker "username" "alice"
@@ -171,7 +175,7 @@ mklock'
   -> CollectionId -- ^ resources collection
   -> IO Locker
 mklock' accountName masterKey dbId resources =
-  (retry 3 (\(SomeException _) -> False) (\_ _ -> pure 0) is429 (\_ _ -> pure 15000) action)
+  retry 3 (\(SomeException _) -> False) (\_ _ -> pure 0) is429 (\_ _ -> pure 15000) action
     >>= onLeft "failed to create locker"
  where
   action = mklock accountName masterKey dbId resources
@@ -220,7 +224,7 @@ createTestCollection Env {..} = do
 deleteTestCollection :: Env -> CollectionId -> IO ()
 deleteTestCollection Env {..} coll = do
   void $ deleteCollection conn testdb coll
-  void $ deleteCollection conn testdb (CollectionId ((unCollectionId coll) <> "_leases"))
+  void $ deleteCollection conn testdb (CollectionId (unCollectionId coll <> "_leases"))
 
 deleteTestCollection_ :: (Env, CollectionId) -> IO ()
 deleteTestCollection_ = uncurry deleteTestCollection

@@ -70,7 +70,7 @@ testAccountPrimaryKey :: Text
 testAccountPrimaryKey = "P455W0RD"
 
 getHeader :: Http.Request -> Http.HeaderName -> Maybe String
-getHeader r hn = BS.unpack . snd <$> (listToMaybe $ filter (\(name,_) -> name == hn) $ Http.requestHeaders r)
+getHeader r hn = BS.unpack . snd <$> listToMaybe (filter (\(name,_) -> name == hn) $ Http.requestHeaders r)
 
 mergeValues :: Value -> Value -> Value
 mergeValues v w = Object $ HML.union (fromObject v) (fromObject w)

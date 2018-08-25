@@ -24,6 +24,9 @@ import Test.Hspec
 
 import SpecHelpers
 
+{-# ANN module ("HLint: ignore Redundant do" :: String) #-}
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
+
 main :: IO ()
 main = hspec spec
 
@@ -434,9 +437,9 @@ spec = parallel $ do
         it "returns nothing" $
           value `shouldBe` Right ()
 
-instance Eq (Http.RequestBody) where
+instance Eq Http.RequestBody where
   Http.RequestBodyLBS lbs1 == Http.RequestBodyLBS lbs2 = lbs1 == lbs2
   _ == _ = False
 
-instance Show (Http.RequestBody) where
+instance Show Http.RequestBody where
   show _ = "some body"

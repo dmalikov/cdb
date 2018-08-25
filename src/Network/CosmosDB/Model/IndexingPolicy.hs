@@ -5,6 +5,8 @@ import Data.Text
 import GHC.Generics
 import Prelude hiding (id)
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
 -- | Indexing policy setting for collection.
 data IndexingPolicy = IndexingPolicy
   { automatic     :: Bool
