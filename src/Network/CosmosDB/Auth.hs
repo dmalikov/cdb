@@ -18,24 +18,25 @@ import Network.CosmosDB.Types
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/access-control-on-cosmosdb-resources?redirectedfrom=MSDN>
 genAuthToken
   :: Connection       -- ^ connection
-  -> RequestOptions m -- ^ options
+  -> Text             -- ^ request method
+  -> Resource         -- ^ resource
   -> Text             -- ^ date serialized
   -> Text
-genAuthToken c RequestOptions {..} date =
+genAuthToken c method resource date =
   encodeText $ T.intercalate "&"
     [ T.intercalate "=" [ "type", masterToken  ]
     , T.intercalate "=" [ "ver" , tokenVersion ]
     , T.intercalate "=" [ "sig" , signature    ]
     ]
  where
-  (resourceType, resourceId) = eval _resource
+  (resourceType, resourceId) = eval resource
   s = encodeUtf8 (T.intercalate "\n"
-    [ T.toLower (rmLiteral _requestMethod)
+    [ T.toLower method
     , T.toLower resourceType
     , resourceId
     , T.toLower date
     ] <> "\n\n")
-  masterKeyDecoded = (BS.pack . B64.decode . BS8.unpack . encodeUtf8) (_masterKey c)
+  masterKeyDecoded = (BS.pack . B64.decode . BS8.unpack . encodeUtf8) (masterKey c)
   signature = (decodeUtf8 . BS8.pack . B64.encodeRawString True . BS8.unpack) (hmac masterKeyDecoded s)
 
 tokenVersion :: Text

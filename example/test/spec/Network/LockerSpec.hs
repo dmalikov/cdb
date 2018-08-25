@@ -18,8 +18,8 @@ import           Prelude hiding (id)
 import           System.Random
 import           System.Environment (getEnv)
 import           Test.Hspec
-import           Test.HUnit.Base (assertFailure)
 
+import SpecHelpers
 import Network.CosmosDB.Retry
 import Network.Locker
 
@@ -164,26 +164,6 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
           shouldBeRight_ =<< enable locker "username" "alice"
           shouldBeRight_ =<< lock locker 10
 
-shouldBeRight :: (Show e, Show a) => Either e a -> IO a
-shouldBeRight r = do
-  r `shouldSatisfy` isRight
-  case r of
-    Left _ -> error "should not happen"
-    Right a -> pure a
-
-shouldBeRight_ :: (Show e, Show a) => Either e a -> IO ()
-shouldBeRight_ r = void (shouldBeRight r)
-
-shouldBeLeft :: (Show e, Show a) => Either e a -> IO e
-shouldBeLeft r = do
-  r `shouldSatisfy` isLeft
-  case r of
-    Left e -> pure e
-    Right _ -> error "should not happen"
-
-shouldBeLeft_ :: (Show e, Show a) => Either e a -> IO ()
-shouldBeLeft_ r = void (shouldBeLeft r)
-
 mklock'
   :: Text         -- ^ account name
   -> Text         -- ^ secret
@@ -199,11 +179,6 @@ mklock' accountName masterKey dbId resources =
     | r ^. W.responseStatus == tooManyRequests429 = True
     | otherwise = False
   is429 _ = False
-
-onLeft :: Show e => String -> Either e a -> IO a
-onLeft s = \case
-  Left e -> assertFailure (s ++ " " ++ show e)
-  Right a -> pure a
 
 data Env = Env
   { acc  :: Text

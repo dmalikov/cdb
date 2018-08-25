@@ -131,7 +131,7 @@ import           Network.HTTP.Types.Status
 import qualified Network.Wreq as W
 import           System.Random (randomRIO)
 
-import Network.CosmosDB hiding (delete)
+import Network.CosmosDB
 import Network.CosmosDB.Retry
 
 -- | Locker.

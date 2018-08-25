@@ -1,16 +1,18 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# Language OverloadedStrings #-}
 {-# Language ScopedTypeVariables #-}
 {-# Language QuasiQuotes #-}
 module Network.CosmosDB.Client.CollectionsSpec where
 
-import Control.Lens
-import Data.Aeson
-import Data.Aeson.QQ (aesonQQ)
-import Data.Function ((&))
-import Data.Maybe (isJust)
-import Network.HTTP.Client.Internal (Response(..))
-import Network.HTTP.Types.Status
-import Prelude hiding (id)
+import           Control.Lens
+import           Data.Aeson
+import           Data.Aeson.QQ (aesonQQ)
+import           Data.Function ((&))
+import qualified Network.HTTP.Client as Http
+import qualified Network.HTTP.Client.Internal as Http
+import qualified Network.HTTP.Types.Status as Http
+import qualified Network.HTTP.Types.Version as Http
+import           Prelude hiding (id)
 
 import Network.CosmosDB.Client.Collections
 import Network.CosmosDB.Mocks
@@ -20,7 +22,7 @@ import Network.CosmosDB.Model.IndexingPolicy
 
 import Test.Hspec
 
-import Utils
+import SpecHelpers
 
 main :: IO ()
 main = hspec spec
@@ -36,8 +38,8 @@ spec = parallel $ do
                 , partitionKey = Nothing
                 , defaultTtl = Nothing
                 }
-            } & runHttpT [(Response
-                  { responseStatus = mkStatus 201 ""
+            } & runHttpT [(Http.Response
+                  { responseStatus = Http.created201
                   , responseBody = encode [aesonQQ|
                   { id: "testcoll"
                   , indexingPolicy:
@@ -81,17 +83,17 @@ spec = parallel $ do
         let requests = mapped %~ fst $ rragg ^. rr
         it "sends single request" $
           length requests `shouldBe` 1
-        let request@Request {..} = head requests
+        let request = head requests
         it "sends POST request" $
-          method `shouldBe` "post"
+          Http.method request `shouldBe` "post"
         it "send request with properly serialized body" $
-          body `shouldBe` Just [aesonQQ| { id: "testcoll" } |]
+          Http.requestBody request `shouldBe` (Http.RequestBodyLBS $ encode [aesonQQ| { id: "testcoll" } |])
         it "sends request to /dbs/{db}/colls path" $
-          path `shouldBe` "https://testaccount.documents.azure.com:443/dbs/db/colls"
+          Http.path request `shouldBe` "/dbs/db/colls"
         it "sends Authorization header properly" $
-          getHeader request "Authorization" `shouldStartWith` "type%3Dmaster%26ver%3D1.0%26sig"
+          assertAuthHeader request
         it "sends 'x-ms-date' header in a proper format" $
-          parseDateRFC1123 (getHeader request "x-ms-date") `shouldSatisfy` isJust
+          assertDateHeader request
         it "parses response" $
           value `shouldBe` Right (Collection
             { id = "testcoll"
@@ -136,8 +138,11 @@ spec = parallel $ do
   describe "listCollections" $ do
     case do { conn <- newConnection testAccount testAccountPrimaryKey;
               listCollections conn "db"
-            } & runHttpT [(Response
-                  { responseStatus = mkStatus 200 ""
+            } & runHttpT [(Http.Response
+                  { responseStatus = Http.ok200
+                  , responseHeaders = []
+                  , responseVersion = Http.http11
+                  , responseCookieJar = mempty
                   , responseBody = encode [aesonQQ|
                     { _rid: "PaYSAA=="
                     , "DocumentCollections":
@@ -214,15 +219,15 @@ spec = parallel $ do
         let requests = mapped %~ fst $ rragg ^. rr
         it "sends single request" $
           length requests `shouldBe` 1
-        let request@Request {..} = head requests
+        let request = head requests
         it "sends GET request" $
-          method `shouldBe` "get"
+          Http.method request `shouldBe` "get"
         it "sends request to /dbs/{db}/colls path" $
-          path `shouldBe` "https://testaccount.documents.azure.com:443/dbs/db/colls"
+          Http.path request `shouldBe` "/dbs/db/colls"
         it "sends Authorization header properly" $
-          getHeader request "Authorization" `shouldStartWith` "type%3Dmaster%26ver%3D1.0%26sig"
+          assertAuthHeader request
         it "sends 'x-ms-date' header in a proper format" $
-          parseDateRFC1123 (getHeader request "x-ms-date") `shouldSatisfy` isJust
+          assertDateHeader request
         it "parses response" $
           value `shouldBe` Right (DocumentCollections
             { _rid = "PaYSAA=="
@@ -305,8 +310,9 @@ spec = parallel $ do
   describe "getCollection" $ do
     case do { conn <- newConnection testAccount testAccountPrimaryKey;
               getCollection conn "db" "testcoll"
-            } & runHttpT [(Response
-                  { responseStatus = mkStatus 200 ""
+            } & runHttpT [(Http.Response
+                  { responseStatus = Http.ok200
+                  , responseVersion = Http.http11
                   , responseBody = encode [aesonQQ|
                   { id: "testcoll"
                   , indexingPolicy:
@@ -350,15 +356,15 @@ spec = parallel $ do
         let requests = mapped %~ fst $ rragg ^. rr
         it "sends single request" $
           length requests `shouldBe` 1
-        let request@Request {..} = head requests
+        let request = head requests
         it "sends GET request" $
-          method `shouldBe` "get"
+          Http.method request `shouldBe` "get"
         it "sends request to /dbs/{db}/colls/{coll} path" $
-          path `shouldBe` "https://testaccount.documents.azure.com:443/dbs/db/colls/testcoll"
+          Http.path request `shouldBe` "/dbs/db/colls/testcoll"
         it "sends Authorization header properly" $
-          getHeader request "Authorization" `shouldStartWith` "type%3Dmaster%26ver%3D1.0%26sig"
+          assertAuthHeader request
         it "sends 'x-ms-date' header in a proper format" $
-          parseDateRFC1123 (getHeader request "x-ms-date") `shouldSatisfy` isJust
+          assertDateHeader request
         it "parses response" $
           value `shouldBe` Right (Collection
             { id = "testcoll"
@@ -403,8 +409,8 @@ spec = parallel $ do
   describe "deleteCollection" $ do
     case do { conn <- newConnection testAccount testAccountPrimaryKey;
               deleteCollection conn "db" "testcoll"
-            } & runHttpT [ Response
-                  { responseStatus = mkStatus 204 ""
+            } & runHttpT [ Http.Response
+                  { responseStatus = Http.noContent204
                   , responseBody = ""
                   }]
               & runDelayT
@@ -416,14 +422,21 @@ spec = parallel $ do
         let requests = mapped %~ fst $ rragg ^. rr
         it "sends single request" $
           length requests `shouldBe` 1
-        let request@Request {..} = head requests
+        let request = head requests
         it "sends DELETE request" $
-          method `shouldBe` "delete"
+          Http.method request `shouldBe` "delete"
         it "sends request to /dbs/{db}/colls/{coll} path" $
-          path `shouldBe` "https://testaccount.documents.azure.com:443/dbs/db/colls/testcoll"
+          Http.path request `shouldBe` "/dbs/db/colls/testcoll"
         it "sends Authorization header properly" $
-          getHeader request "Authorization" `shouldStartWith` "type%3Dmaster%26ver%3D1.0%26sig"
+          assertAuthHeader request
         it "sends 'x-ms-date' header in a proper format" $
-          parseDateRFC1123 (getHeader request "x-ms-date") `shouldSatisfy` isJust
+          assertDateHeader request
         it "returns nothing" $
           value `shouldBe` Right ()
+
+instance Eq (Http.RequestBody) where
+  Http.RequestBodyLBS lbs1 == Http.RequestBodyLBS lbs2 = lbs1 == lbs2
+  _ == _ = False
+
+instance Show (Http.RequestBody) where
+  show _ = "some body"

@@ -28,40 +28,40 @@ module Network.CosmosDB.Types
 
 import           Control.Concurrent (threadDelay)
 import           Control.Exception.Safe (Exception)
-import           Control.Lens
 import           Control.Monad.Reader (ReaderT)
 import           Control.Monad.State (StateT)
 import           Control.Monad.Trans.Class (MonadTrans(..))
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
-import           Data.ByteString.Lazy (ByteString)
-import qualified Data.HashMap.Strict as M
 import           Data.Semigroup ((<>))
 import           Data.String (IsString)
 import           Data.Text (Text)
 import qualified Data.Text.IO as T
 import           Data.Time.Clock
 import           Data.Typeable (Typeable)
-import           Network.HTTP.Types.Status
-import qualified Network.Wreq as W
-import qualified Network.Wreq.Session as WS
+import qualified Network.HTTP.Client as Http
+import qualified Network.HTTP.Client.TLS as Http
+import qualified Network.HTTP.Types.Header as Http
+import qualified Network.HTTP.Types.Method as Http
+import qualified Network.HTTP.Types.Status as Http
 import           System.Random (randomRIO)
 
 import Network.CosmosDB.Internal
 
 data Connection = Connection
-  { _accountName :: Text
-  , _masterKey   :: Text
-  , _session     :: WS.Session
+  { accountName :: Text
+  , masterKey   :: Text
+  , manager     :: Http.Manager
   }
 
 -- | Request Options.
 data RequestOptions m = RequestOptions
-  { _resource          :: Resource
-  , _headers           :: M.HashMap Text [Text]
-  , _requestMethod     :: RequestMethod
-  , _successStatusCode :: Status
-  , _retryOptions      :: RetryOptions m
+  { reqResource   :: Resource
+  , reqHeaders    :: Http.RequestHeaders
+  , reqMethod     :: Http.Method
+  , reqBodyMay    :: Maybe BSL.ByteString
+  , successStatus :: Http.Status
+  , retryOptions  :: RetryOptions m
   }
 
 -- Initialize the connection with given account name and master key.
@@ -74,11 +74,11 @@ newConnection an mk = Connection an mk <$> newSession
 
 -- | Error during HTTP request.
 data Error
-  = UnexpectedResponseStatusCode (W.Response BSL.ByteString)
+  = UnexpectedResponseStatusCode (Http.Response BSL.ByteString)
   deriving (Eq, Show)
 
-isUnexpectedCode :: Error -> Status -> Bool
-UnexpectedResponseStatusCode r `isUnexpectedCode` sc = r ^. W.responseStatus == sc
+isUnexpectedCode :: Error -> Http.Status -> Bool
+UnexpectedResponseStatusCode r `isUnexpectedCode` sc = Http.responseStatus r == sc
 
 data ResponseException
   = DeserializationException Text
@@ -100,18 +100,12 @@ instance MonadTime m => MonadTime (StateT w m)
 instance MonadTime m => MonadTime (ReaderT s m)
 
 class (Monad m, Functor m) => MonadHttp m where
-  newSession :: m WS.Session
-  post       :: W.Options -> WS.Session -> String -> ByteString -> m (W.Response BSL.ByteString)
-  put        :: W.Options -> WS.Session -> String -> ByteString -> m (W.Response BSL.ByteString)
-  get        :: W.Options -> WS.Session -> String               -> m (W.Response BSL.ByteString)
-  delete     :: W.Options -> WS.Session -> String               -> m (W.Response BSL.ByteString)
+  newSession :: m Http.Manager
+  sendHttp   :: Http.Request -> Http.Manager -> m (Http.Response BSL.ByteString)
 
 instance MonadHttp IO where
-  newSession = WS.newAPISession
-  post       = WS.postWith
-  put        = WS.putWith
-  get        = WS.getWith
-  delete     = WS.deleteWith
+  newSession = Http.newTlsManager
+  sendHttp   = Http.httpLbs
 
 instance MonadHttp m => MonadHttp (ReaderT s m)
 

@@ -11,14 +11,12 @@ import           Control.Lens
 import           Data.Aeson
 import           Data.Aeson.Lens
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.HashMap.Strict as M
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import           Network.HTTP.Types.Status
 
 import Network.CosmosDB.Request
 import Network.CosmosDB.Types
-import Network.CosmosDB.Internal
 
 -- | Create a document.
 --
@@ -32,11 +30,12 @@ createDocument
   -> m (Either Error Value)
 createDocument c dbId collId value = send c $
   RequestOptions
-    { _resource          = Docs dbId collId
-    , _headers           = M.fromList [("Content-Type", ["application/json"])]
-    , _requestMethod     = POST (encode value)
-    , _successStatusCode = created201
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Docs dbId collId
+    , reqHeaders    = [("Content-Type", "application/json")]
+    , reqMethod     = "post"
+    , successStatus = created201
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Just (encode value)
     }
 
 -- | Get a document.
@@ -51,11 +50,12 @@ getDocument
   -> m (Either Error Value)
 getDocument c dbId collId docId = send c $
   RequestOptions
-    { _resource          = Doc dbId collId docId
-    , _headers           = M.fromList [("Content-Type", ["application/json"])]
-    , _requestMethod     = GET
-    , _successStatusCode = ok200
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Doc dbId collId docId
+    , reqHeaders    = [("Content-Type", "application/json")]
+    , reqMethod     = "get"
+    , successStatus = ok200
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Nothing
     }
 
 -- | Replace a document.
@@ -73,11 +73,12 @@ replaceDocument
   -> m (Either Error Value)
 replaceDocument c dbId collId docId value = send c $
   RequestOptions
-    { _resource          = Doc dbId collId docId
-    , _headers           = M.fromList [("Content-Type", ["application/json"])]
-    , _requestMethod     = PUT (encode value)
-    , _successStatusCode = ok200
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Doc dbId collId docId
+    , reqHeaders    = [("Content-Type", "application/json")]
+    , reqMethod     = "put"
+    , successStatus = ok200
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Just (encode value)
     }
 
 -- | Delete a document.
@@ -93,11 +94,12 @@ deleteDocument
   -> m (Either Error ())
 deleteDocument c mEtag dbId collId docId = send_ c $
   RequestOptions
-    { _resource          = Doc dbId collId docId
-    , _headers           = maybe M.empty (\v -> M.singleton "If-Match" [v]) mEtag
-    , _requestMethod     = DELETE
-    , _successStatusCode = noContent204
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Doc dbId collId docId
+    , reqHeaders    = maybe [] (\v -> [("If-Match", T.encodeUtf8 v)]) mEtag
+    , reqMethod     = "delete"
+    , successStatus = noContent204
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Nothing
     }
 
 -- | Query json documents in a collection.
@@ -112,13 +114,14 @@ queryDocuments
   -> m (Either Error [Value])
 queryDocuments c dbId collId query = fmap getDocuments <$> (send c $
   RequestOptions
-    { _resource          = Docs dbId collId
-    , _headers           = M.fromList [ ("x-ms-documentdb-isquery", ["true"])
-                                      , ("Content-Type", ["application/query+json"])
-                                      ]
-    , _requestMethod     = POST (BSL.fromStrict $ T.encodeUtf8 query)
-    , _successStatusCode = ok200
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Docs dbId collId
+    , reqHeaders    = [ ("x-ms-documentdb-isquery", "true"                  )
+                      , ("Content-Type"           , "application/query+json")
+                      ]
+    , reqMethod     = "post"
+    , successStatus = ok200
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Just $ BSL.fromStrict $ T.encodeUtf8 query
     })
 
 getDocuments :: Value -> [Value]

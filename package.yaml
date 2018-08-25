@@ -19,7 +19,9 @@ dependencies:
   - base >= 4.10.1
   - aeson
   - bytestring
+  - case-insensitive
   - http-client
+  - http-client-tls
   - http-types
   - lens
   - lens-aeson
@@ -29,7 +31,6 @@ dependencies:
   - time
   - transformers
   - unordered-containers
-  - wreq
 
 default-extensions:
   - DuplicateRecordFields
@@ -71,12 +72,14 @@ tests:
   spec:
     main: Spec.hs
     source-dirs:
+      - test
       - test/spec/
     dependencies:
       - aeson-qq
       - cdb
       - hspec
       - hspec-expectations
+      - HUnit
     ghc-options:
       - -fno-warn-missing-fields
       - -threaded
@@ -84,5 +87,6 @@ tests:
     default-extensions:
       - DuplicateRecordFields
       - GADTs
+      - LambdaCase
       - OverloadedStrings
       - RecordWildCards

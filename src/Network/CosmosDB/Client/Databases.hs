@@ -8,7 +8,6 @@ import Network.HTTP.Types.Status
 import Network.CosmosDB.Request
 import Network.CosmosDB.Types
 import Network.CosmosDB.Model.Database
-import Network.CosmosDB.Internal
 
 -- | List the databases under the database account.
 --
@@ -19,9 +18,10 @@ listDatabases
   -> m (Either Error Databases)
 listDatabases c = send c $
   RequestOptions
-    { _resource          = Dbs
-    , _headers           = mempty
-    , _requestMethod     = GET
-    , _successStatusCode = ok200
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Dbs
+    , reqHeaders    = mempty
+    , reqMethod     = "get"
+    , successStatus = ok200
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Nothing
     }

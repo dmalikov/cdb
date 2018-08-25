@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 41a2f3a33f4fca5dcac8f18553ff0f7b530830017028e1d9ebc651269964c314
+-- hash: 2cd5906f194932b6defb27b38cba0f66f830d1691d98e24f819ac7bc233dfb05
 
 name:                lockers
 version:             0.1
@@ -66,9 +66,11 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      SpecHelpers
       Network.LockerSpec
       Paths_lockers
   hs-source-dirs:
+      test
       test/spec/
   build-depends:
       HUnit

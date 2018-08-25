@@ -3,15 +3,13 @@
 {-# Language QuasiQuotes #-}
 module Network.CosmosDB.Client.DatabasesSpec where
 
-import           Control.Exception.Safe (SomeException)
 import           Control.Lens
 import           Data.Aeson
 import           Data.Aeson.QQ (aesonQQ)
 import           Data.Function ((&))
-import           Data.Maybe (isJust)
-import           Network.HTTP.Client.Internal (Response(..))
-import           Network.HTTP.Types.Status
-import qualified Network.Wreq as W
+import qualified Network.HTTP.Client as Http
+import qualified Network.HTTP.Client.Internal as Http
+import qualified Network.HTTP.Types.Status as Http
 import           Prelude hiding (id)
 
 import Network.CosmosDB.Client.Databases
@@ -21,7 +19,7 @@ import Network.CosmosDB.Model.Database
 
 import Test.Hspec
 
-import Utils
+import SpecHelpers
 
 main :: IO ()
 main = hspec spec
@@ -31,8 +29,8 @@ spec :: Spec
 spec = parallel $
   describe "listDatabases" $ do
     case (listDatabases =<< newConnection testAccount testAccountPrimaryKey)
-           & runHttpT [(Response
-             { responseStatus = mkStatus 200 ""
+           & runHttpT [(Http.Response
+             { responseStatus = Http.ok200
              , responseBody = encode [aesonQQ|
                { _rid: ""
                , Databases: [
@@ -65,15 +63,15 @@ spec = parallel $
         let requests = mapped %~ fst $ rragg ^. rr
         it "sends single request" $
           length requests `shouldBe` 1
-        let request@Request {..} = head requests
+        let request = head requests
         it "sends GET request" $
-          method `shouldBe` "get"
+          Http.method request `shouldBe` "get"
         it "sends request to /dbs/ path" $
-          path `shouldBe` "https://testaccount.documents.azure.com:443/dbs"
+          Http.path request `shouldBe` "/dbs"
         it "sends Authorization header properly" $
-          getHeader request "Authorization" `shouldStartWith` "type%3Dmaster%26ver%3D1.0%26sig"
+          assertAuthHeader request
         it "sends 'x-ms-date' header in a proper format" $
-          parseDateRFC1123 (getHeader request "x-ms-date") `shouldSatisfy` isJust
+          assertDateHeader request
         it "parses response" $
           value `shouldBe` Right (Databases
             { _rid = ""
@@ -102,16 +100,12 @@ spec = parallel $
     context "when account does not exist" $
       it "throws UnexpectedResponseStatusCode exception" $
         ((listDatabases =<< newConnection testAccount testAccountPrimaryKey)
-          & runHttpT [Response
-             { responseStatus = mkStatus 404 ""
+          & runHttpT [Http.Response
+             { responseStatus = Http.notFound404
              , responseBody = ""
              } ]
-          & runDelayT 
+          & runDelayT
           & runRandomT 10
            & runLogT
           & runTimeT someTime)
-          `shouldSatisfy` unexpectedCode notFound404
-
-unexpectedCode :: Status -> Either SomeException (Either Error a, b) -> Bool
-unexpectedCode s (Right (Left (UnexpectedResponseStatusCode r), _)) = r ^. W.responseStatus == s
-unexpectedCode _ _ = False
+          `shouldSatisfy` unexpectedCode Http.notFound404

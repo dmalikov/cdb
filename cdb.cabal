@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6f82e290d8d1584400ed18c718c354008745682e39da69dd60ba5af66060fa38
+-- hash: 647c698a668cc963e8b42c8d7b6d0b96d797dd93ebdc703aa83f7efb4405e8cd
 
 name:                cdb
 version:             0.1
@@ -41,6 +41,7 @@ library
     , case-insensitive
     , cryptohash-sha256
     , http-client
+    , http-client-tls
     , http-types
     , lens
     , lens-aeson
@@ -53,7 +54,6 @@ library
     , transformers
     , unordered-containers
     , uri-encode
-    , wreq
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DefaultSignatures DeriveGeneric GeneralizedNewtypeDeriving StrictData
   ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes
@@ -62,24 +62,28 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      SpecHelpers
       Network.CosmosDB.Client.CollectionsSpec
       Network.CosmosDB.Client.DatabasesSpec
       Network.CosmosDB.Client.DocumentsSpec
       Network.CosmosDB.Mocks
       Network.CosmosDB.RetrySpec
-      Utils
       Paths_cdb
   hs-source-dirs:
+      test
       test/spec/
   build-depends:
-      aeson
+      HUnit
+    , aeson
     , aeson-qq
     , base >=4.10.1
     , bytestring
+    , case-insensitive
     , cdb
     , hspec
     , hspec-expectations
     , http-client
+    , http-client-tls
     , http-types
     , lens
     , lens-aeson
@@ -89,7 +93,6 @@ test-suite spec
     , time
     , transformers
     , unordered-containers
-    , wreq
   default-language: Haskell2010
-  default-extensions: DuplicateRecordFields GADTs OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DuplicateRecordFields GADTs OverloadedStrings RecordWildCards
+  default-extensions: DuplicateRecordFields GADTs OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards
   ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes -fno-warn-missing-fields -threaded -with-rtsopts=-N

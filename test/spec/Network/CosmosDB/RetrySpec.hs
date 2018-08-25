@@ -7,8 +7,8 @@ import           Control.Lens
 import           Data.Aeson
 import           Data.Aeson.QQ (aesonQQ)
 import           Data.Function ((&))
-import           Network.HTTP.Client.Internal (Response(..))
-import           Network.HTTP.Types.Status
+import qualified Network.HTTP.Client.Internal as Http
+import qualified Network.HTTP.Types.Status as Http
 import           Prelude hiding (id)
 
 import Network.CosmosDB.Client.Databases
@@ -17,7 +17,7 @@ import Network.CosmosDB.Types
 
 import Test.Hspec
 
-import Utils
+import SpecHelpers
 
 main :: IO ()
 main = hspec spec
@@ -27,13 +27,13 @@ spec = do
   describe "retry" $ do
     case (listDatabases =<< newConnection testAccount testAccountPrimaryKey)
            & runHttpT
-             [ Response
-               { responseStatus = mkStatus 429 "Too Many Requests"
+             [ Http.Response
+               { responseStatus = Http.tooManyRequests429
                , responseBody = ""
                , responseHeaders = [ ("x-ms-retry-after-ms", "8953") ]
                }
-             , Response
-               { responseStatus = mkStatus 200 ""
+             , Http.Response
+               { responseStatus = Http.ok200
                , responseBody = encode [aesonQQ|
                  { _rid: ""
                  , Databases: [

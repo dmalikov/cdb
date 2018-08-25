@@ -4,14 +4,14 @@ module Network.CosmosDB.Retry
   ) where
 
 import           Control.Exception.Safe
-import           Control.Lens ((^?), (^.))
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as BSL
+import           Data.CaseInsensitive
+import           Data.Maybe
 import           Data.Semigroup ((<>))
 import qualified Data.Text as T
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Status
-import qualified Network.Wreq as W
 
 import Network.CosmosDB.Types
 
@@ -30,14 +30,14 @@ retryHttp RetryOptions {..} = retry retries isTimeout (const nextBackoff) isTran
 
   isTransientError :: Error -> Bool
   isTransientError (UnexpectedResponseStatusCode r)
-    | r ^. W.responseStatus == tooManyRequests429 = True
+    | responseStatus r == tooManyRequests429 = True
   isTransientError (UnexpectedResponseStatusCode r)
-    | statusIsServerError (r ^. W.responseStatus) = True
+    | statusIsServerError (responseStatus r) = True
   isTransientError _ = False
 
   -- responseBackoff :: Error -> Int -> m Int
   responseBackoff (UnexpectedResponseStatusCode r) _
-    | r ^. W.responseStatus == tooManyRequests429 = do
+    | responseStatus r == tooManyRequests429 = do
       let backoff = parseBackoff r
       let bufferBase = floor @Double (fromIntegral backoff * 0.1) -- increase backoff to 10%-20% with 10 sec cap
       buffer <- fullJitterBackoff 10000 bufferBase 1
@@ -45,8 +45,11 @@ retryHttp RetryOptions {..} = retry retries isTimeout (const nextBackoff) isTran
   responseBackoff (UnexpectedResponseStatusCode _) attempt
     = nextBackoff attempt
 
-  parseBackoff :: W.Response BSL.ByteString -> Int
-  parseBackoff r = maybe defaultThrottlingBackoff fst (BSC.readInt =<< r ^? W.responseHeader "x-ms-retry-after-ms")
+  parseBackoff :: Response BSL.ByteString -> Int
+  parseBackoff r = maybe defaultThrottlingBackoff fst (BSC.readInt =<< responseHeader "x-ms-retry-after-ms" r)
+
+responseHeader :: BSC.ByteString -> Response BSL.ByteString -> Maybe BSC.ByteString
+responseHeader hn r = snd <$> (listToMaybe $ filter (\(name,_) -> name == mk hn) $ responseHeaders r)
 
 -- | Retry action.
 retry :: (MonadDelay m, MonadCatch m, Exception e, MonadLog m)

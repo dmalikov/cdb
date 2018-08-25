@@ -7,7 +7,6 @@ import Network.HTTP.Types.Status
 import Network.CosmosDB.Request
 import Network.CosmosDB.Types
 import Network.CosmosDB.Model.Collection
-import Network.CosmosDB.Internal
 
 -- | Create a collection.
 --
@@ -20,11 +19,12 @@ createCollection
   -> m (Either Error Collection)
 createCollection c dbId cco = send c $
   RequestOptions
-    { _resource          = Colls dbId
-    , _headers           = mempty
-    , _requestMethod     = POST (encode cco)
-    , _successStatusCode = created201
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Colls dbId
+    , reqHeaders    = mempty
+    , reqMethod     = "post"
+    , successStatus = created201
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Just (encode cco)
     }
 
 -- | List collections.
@@ -37,11 +37,12 @@ listCollections
   -> m (Either Error DocumentCollections)
 listCollections c dbId = send c $
   RequestOptions
-    { _resource          = Colls dbId
-    , _headers           = mempty
-    , _requestMethod     = GET
-    , _successStatusCode = ok200
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Colls dbId
+    , reqHeaders    = mempty
+    , reqMethod     = "get"
+    , successStatus = ok200
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Nothing
     }
 
 -- | Get a collection.
@@ -55,11 +56,12 @@ getCollection
   -> m (Either Error Collection)
 getCollection c dbId collId = send c $
   RequestOptions
-    { _resource          = Coll dbId collId
-    , _headers           = mempty
-    , _requestMethod     = GET
-    , _successStatusCode = ok200
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Coll dbId collId
+    , reqHeaders    = mempty
+    , reqMethod     = "get"
+    , successStatus = ok200
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Nothing
     }
 
 -- | Delete a collection.
@@ -73,9 +75,10 @@ deleteCollection
   -> m (Either Error ())
 deleteCollection c dbId collId = send_ c $
   RequestOptions
-    { _resource          = Coll dbId collId
-    , _headers           = mempty
-    , _requestMethod     = DELETE
-    , _successStatusCode = noContent204
-    , _retryOptions      = defaultRetryOptions
+    { reqResource   = Coll dbId collId
+    , reqHeaders    = mempty
+    , reqMethod     = "delete"
+    , successStatus = noContent204
+    , retryOptions  = defaultRetryOptions
+    , reqBodyMay    = Nothing
     }
