@@ -12,8 +12,8 @@ import           Data.Either
 import           Data.Semigroup ((<>))
 import           Data.Text
 import           Network.CosmosDB
-import           Network.HTTP.Types.Status
-import qualified Network.Wreq as W
+import qualified Network.HTTP.Client as Http
+import qualified Network.HTTP.Types.Status as Http
 import           Prelude hiding (id)
 import           System.Random
 import           System.Environment (getEnv)
@@ -34,7 +34,7 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
         it "returns error" $ \(Env {..}, _) -> do
           let absentCollection = CollectionId "doesnotexistforsure"
           e <- getCollection conn testdb absentCollection
-          e `shouldSatisfy` unexpectedCode notFound404
+          e `shouldSatisfy` unexpectedCode Http.notFound404
           (mklock acc key testdb absentCollection >>= shouldBeLeft)
             `shouldReturn` NoResourceCollection
 
@@ -42,7 +42,7 @@ spec = beforeAll newEnv $ aroundWith withCollection $ do
         it "creates it with proper ttl" $ \(Env {..}, coll) -> do
           let leasesColl = CollectionId ((unCollectionId coll) <> "_leases")
           e <- getCollection conn testdb leasesColl
-          e `shouldSatisfy` unexpectedCode notFound404
+          e `shouldSatisfy` unexpectedCode Http.notFound404
           void (mklock' acc key testdb coll)
           Collection {..} <- shouldBeRight =<< getCollection conn testdb leasesColl
           id `shouldBe` leasesColl
@@ -176,7 +176,7 @@ mklock' accountName masterKey dbId resources =
  where
   action = mklock accountName masterKey dbId resources
   is429 (CosmosDbError (UnexpectedResponseStatusCode r))
-    | r ^. W.responseStatus == tooManyRequests429 = True
+    | Http.responseStatus r == Http.tooManyRequests429 = True
     | otherwise = False
   is429 _ = False
 
@@ -214,7 +214,7 @@ createTestCollection Env {..} = do
     , defaultTtl = Nothing
     })
   is429 (UnexpectedResponseStatusCode r)
-    | r ^. W.responseStatus == tooManyRequests429 = True
+    | Http.responseStatus r == Http.tooManyRequests429 = True
     | otherwise = False
 
 deleteTestCollection :: Env -> CollectionId -> IO ()
@@ -233,8 +233,8 @@ rand_name = do
 testdb :: DatabaseId
 testdb = "tempdb"
 
-unexpectedCode :: Status -> Either Error a -> Bool
-unexpectedCode s (Left (UnexpectedResponseStatusCode r)) = r ^. W.responseStatus == s
+unexpectedCode :: Http.Status -> Either Error a -> Bool
+unexpectedCode s (Left (UnexpectedResponseStatusCode r)) = Http.responseStatus r == s
 unexpectedCode _ _ = False
 
 instance Show Locker where

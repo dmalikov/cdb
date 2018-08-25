@@ -114,7 +114,7 @@ module Network.Locker
   ) where
 
 import           Control.Exception.Safe
-import           Control.Lens ((^.), (.~), (&))
+import           Control.Lens ((.~), (&))
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Except
@@ -127,8 +127,8 @@ import qualified Data.Text as T
 import           Data.Text (Text)
 import           Data.UUID (toText)
 import           Data.UUID.V4 (nextRandom)
-import           Network.HTTP.Types.Status
-import qualified Network.Wreq as W
+import qualified Network.HTTP.Client as Http
+import qualified Network.HTTP.Types.Status as Http
 import           System.Random (randomRIO)
 
 import Network.CosmosDB
@@ -188,7 +188,7 @@ mklock accountName masterKey dbId resources = runExceptT $ do
   createIfAbsent conn leases leasesCollM = do
     leasesCollRes <- leasesCollM
     case leasesCollRes of
-      Left e | e `isUnexpectedCode` notFound404 -> do
+      Left e | e `isUnexpectedCode` Http.notFound404 -> do
         res <- createCollection conn dbId $ CollectionCreationOptions
           { id = leases
           , partitionKey = Nothing
@@ -196,7 +196,7 @@ mklock accountName masterKey dbId resources = runExceptT $ do
           , defaultTtl = Just (-1)
           }
         case res of
-          Left e' | e' `isUnexpectedCode` conflict409 ->
+          Left e' | e' `isUnexpectedCode` Http.conflict409 ->
             -- collection might got created by another locker
             pure (Right ())
           Left e' -> pure (Left (CosmosDbError e'))
@@ -212,7 +212,7 @@ lock
 lock locker@Locker {..} sec = retry 3 (\(SomeException _) -> False) (\_ _ -> pure 0) isTransientError backoffF (lockNoRetry locker sec)
  where
   isTransientError (CosmosDbError (UnexpectedResponseStatusCode r))
-    | r ^. W.responseStatus == conflict409 = True
+    | Http.responseStatus r == Http.conflict409 = True
   isTransientError _ = False
   backoffF _ = fullJitterBackoff 30000 1000
 
@@ -253,8 +253,8 @@ release Locker {..} LRes {..} =
   classify :: Either Error () -> Either LockerError Bool
   classify (Right _) = Right True
   classify (Left (UnexpectedResponseStatusCode r))
-    | r ^. W.responseStatus == status412 = Right False
-    | r ^. W.responseStatus == notFound404 = Right False
+    | Http.responseStatus r == Http.status412 = Right False
+    | Http.responseStatus r == Http.notFound404 = Right False
   classify (Left e) = Left (CosmosDbError e)
 
 -- | 'void' . 'release'
@@ -343,5 +343,5 @@ withNoIdException = maybe (throw NoIdException) pure
 withNoResourceCollection :: MonadThrow m => m (Either Error r) -> ExceptT LockerError m ()
 withNoResourceCollection = void . withExceptT f . ExceptT
   where
-    f e | e `isUnexpectedCode` notFound404 = NoResourceCollection
-        | otherwise                        = CosmosDbError e
+    f e | e `isUnexpectedCode` Http.notFound404 = NoResourceCollection
+        | otherwise                             = CosmosDbError e

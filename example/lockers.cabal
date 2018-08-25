@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2cd5906f194932b6defb27b38cba0f66f830d1691d98e24f819ac7bc233dfb05
+-- hash: aeb5b911d873fac2e3e0f4fee1265a5710c8f03a666d022ace54537c82aa506a
 
 name:                lockers
 version:             0.1
@@ -27,6 +27,7 @@ library
       aeson
     , base >=4.10.1
     , cdb
+    , http-client
     , http-types
     , lens
     , lens-aeson
@@ -35,7 +36,6 @@ library
     , text
     , transformers
     , uuid
-    , wreq
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns
   ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes
@@ -51,13 +51,13 @@ executable lockers
     , async
     , base >=4.10.1
     , cdb
+    , http-client
     , http-types
     , lens
     , lens-aeson
     , lockers
     , random
     , text
-    , wreq
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns
   ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes
@@ -80,13 +80,13 @@ test-suite spec
     , base >=4.10.1
     , cdb
     , hspec
+    , http-client
     , http-types
     , lens
     , lens-aeson
     , lockers
     , random
     , text
-    , wreq
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DuplicateRecordFields GADTs OverloadedStrings RecordWildCards
   ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes -fno-warn-type-defaults -fno-warn-orphans -fno-warn-missing-fields
