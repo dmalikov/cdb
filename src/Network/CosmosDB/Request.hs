@@ -32,7 +32,7 @@ import Network.CosmosDB.Internal
 -- In case of response status code not matching the expected one set in '_successStatusCode'.
 -- In case of json parsing exception, 'DeserializationException' would be thrown.
 send
-  :: (MonadCatch m, MonadTime m, MonadHttp m, FromJSON a, MonadDelay m, MonadLog m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, FromJSON a, MonadDelay m, MonadLog m, MonadRandom m)
   => Connection
   -> RequestOptions m
   -> m (Either Error a)
@@ -46,7 +46,7 @@ send c ro = parse =<< sendAndRetry c ro
 
 -- | Void 'send'.
 send_
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m, MonadRandom m)
   => Connection
   -> RequestOptions m
   -> m (Either Error ())
@@ -54,7 +54,7 @@ send_ c ro = void <$> sendAndRetry c ro
 
 -- | 'sendRequest' being retried.
 sendAndRetry
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m)
+  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m, MonadRandom m)
   => Connection
   -> RequestOptions m
   -> m (Either Error (W.Response BSL.ByteString))

@@ -16,7 +16,7 @@ import qualified Network.Wreq as W
 import Network.CosmosDB.Types
 
 -- | Retry http request with given options.
-retryHttp :: (MonadDelay m, MonadCatch m, MonadLog m)
+retryHttp :: (MonadDelay m, MonadCatch m, MonadLog m, MonadRandom m)
   => RetryOptions m -> m (Either Error a) -> m (Either Error a)
 retryHttp RetryOptions {..} = retry retries isTimeout (const nextBackoff) isTransientError responseBackoff
 
@@ -37,7 +37,11 @@ retryHttp RetryOptions {..} = retry retries isTimeout (const nextBackoff) isTran
 
   -- responseBackoff :: Error -> Int -> m Int
   responseBackoff (UnexpectedResponseStatusCode r) _
-    | r ^. W.responseStatus == tooManyRequests429 = pure (parseBackoff r)
+    | r ^. W.responseStatus == tooManyRequests429 = do
+      let backoff = parseBackoff r
+      let bufferBase = floor @Double (fromIntegral backoff * 0.1) -- increase backoff to 10%-20% with 10 sec cap
+      buffer <- fullJitterBackoff 10000 bufferBase 1
+      pure (backoff + buffer)
   responseBackoff (UnexpectedResponseStatusCode _) attempt
     = nextBackoff attempt
 

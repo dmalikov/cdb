@@ -120,7 +120,7 @@ class Monad m => MonadDelay m where
   delay :: Int -> m ()
 
   default delay :: (MonadTrans t, MonadDelay m', m ~ t m') => Int -> m ()
-  delay x = lift (delay x)
+  delay = lift . delay
 
 instance MonadDelay IO where
   delay i = threadDelay (i * 1000)
@@ -130,6 +130,9 @@ instance MonadDelay m => MonadDelay (ReaderT s m)
 
 class Monad m => MonadRandom m where
   randomLoHi :: (Int, Int) -> m Int
+
+  default randomLoHi :: (MonadTrans t, MonadRandom m', m ~ t m') => (Int, Int) -> m Int
+  randomLoHi = lift . randomLoHi
 
 instance MonadRandom IO where
   randomLoHi = randomRIO
@@ -141,7 +144,7 @@ class Monad m => MonadLog m where
   logMessage :: Text -> m ()
 
   default logMessage :: (MonadTrans t, MonadLog m', m ~ t m') => Text -> m ()
-  logMessage x = lift (logMessage x)
+  logMessage = lift . logMessage
 
 instance MonadLog IO where
   logMessage = T.putStrLn
