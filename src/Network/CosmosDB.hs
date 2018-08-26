@@ -15,8 +15,8 @@
 -- @
 
 module Network.CosmosDB
-  ( -- Core types
-    module Network.CosmosDB.Types
+  ( -- Core
+    module Network.CosmosDB.Core
     -- Collections functions
   , module Network.CosmosDB.Client.Collections
   , module Network.CosmosDB.Model.Collection
@@ -29,10 +29,10 @@ module Network.CosmosDB
   , module Network.CosmosDB.Model.IndexingPolicy
   ) where
 
-import Network.CosmosDB.Types
-import Network.CosmosDB.Model.Collection
-import Network.CosmosDB.Model.Database
-import Network.CosmosDB.Model.IndexingPolicy
 import Network.CosmosDB.Client.Collections
 import Network.CosmosDB.Client.Databases
 import Network.CosmosDB.Client.Documents
+import Network.CosmosDB.Model.Collection
+import Network.CosmosDB.Model.Database
+import Network.CosmosDB.Model.IndexingPolicy
+import Network.CosmosDB.Core

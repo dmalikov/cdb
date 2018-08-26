@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-missing-methods #-} -- TODO: this is inappropriate
-module Network.CosmosDB.Types
+module Network.CosmosDB.Core
   ( -- * Connection
     Connection(..)
   , newConnection
@@ -10,7 +9,6 @@ module Network.CosmosDB.Types
   , DocumentId(..)
   , eval
   , address
-  , rmLiteral
     -- * Request
   , RequestOptions(..)
   , RetryOptions(..)
@@ -47,8 +45,6 @@ import qualified Network.HTTP.Types.Header as Http
 import qualified Network.HTTP.Types.Method as Http
 import qualified Network.HTTP.Types.Status as Http
 import           System.Random (randomRIO)
-
-import Network.CosmosDB.Internal
 
 data Connection = Connection
   { accountName :: Text
@@ -104,6 +100,12 @@ instance MonadTime m => MonadTime (ReaderT s m)
 class (Monad m, Functor m) => MonadHttp m where
   newSession :: m Http.Manager
   sendHttp   :: Http.Request -> Http.Manager -> m (Http.Response BSL.ByteString)
+
+  default newSession :: (MonadTrans t, MonadHttp m', m ~ t m') => m Http.Manager
+  newSession = lift newSession
+
+  default sendHttp :: (MonadTrans t, MonadHttp m', m ~ t m') => Http.Request -> Http.Manager -> m (Http.Response BSL.ByteString)
+  sendHttp r m = lift (sendHttp r m)
 
 instance MonadHttp IO where
   newSession = Http.newTlsManager

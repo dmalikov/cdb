@@ -15,8 +15,8 @@ import qualified Network.HTTP.Types.Version as Http
 import           Prelude hiding (id)
 
 import Network.CosmosDB.Client.Collections
+import Network.CosmosDB.Core
 import Network.CosmosDB.Mocks
-import Network.CosmosDB.Types
 import Network.CosmosDB.Model.Collection
 import Network.CosmosDB.Model.IndexingPolicy
 

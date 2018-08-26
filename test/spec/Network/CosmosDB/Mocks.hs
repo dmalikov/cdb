@@ -20,7 +20,7 @@ import qualified Network.HTTP.Client.Internal as Http
 import qualified Network.HTTP.Client.TLS as Http
 import           System.IO.Unsafe (unsafePerformIO)
 
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 
 data Agg = Agg
   { _next :: [Http.Response BSL.ByteString]

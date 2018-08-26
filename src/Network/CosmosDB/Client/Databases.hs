@@ -5,9 +5,9 @@ module Network.CosmosDB.Client.Databases
 import Control.Exception.Safe
 import Network.HTTP.Types.Status
 
-import Network.CosmosDB.Request
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 import Network.CosmosDB.Model.Database
+import Network.CosmosDB.Request
 
 -- | List the databases under the database account.
 --

@@ -12,7 +12,7 @@ import           Data.Text (Text)
 import           Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import           Network.URI.Encode (encodeText)
 
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 
 -- | Generate auth token.
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/access-control-on-cosmosdb-resources?redirectedfrom=MSDN>

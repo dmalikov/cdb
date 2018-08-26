@@ -4,9 +4,9 @@ import Control.Exception.Safe
 import Data.Aeson (encode)
 import Network.HTTP.Types.Status
 
-import Network.CosmosDB.Request
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 import Network.CosmosDB.Model.Collection
+import Network.CosmosDB.Request
 
 -- | Create a collection.
 --

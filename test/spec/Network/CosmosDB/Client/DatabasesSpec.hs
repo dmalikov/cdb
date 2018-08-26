@@ -13,8 +13,8 @@ import qualified Network.HTTP.Types.Status as Http
 import           Prelude hiding (id)
 
 import Network.CosmosDB.Client.Databases
+import Network.CosmosDB.Core
 import Network.CosmosDB.Mocks
-import Network.CosmosDB.Types
 import Network.CosmosDB.Model.Database
 
 import Test.Hspec

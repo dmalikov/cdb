@@ -22,7 +22,7 @@ import qualified Network.HTTP.Types.Method as Http
 import qualified Network.HTTP.Types.Status as Http
 
 import Network.CosmosDB.Auth
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 import Network.CosmosDB.Retry
 
 -- | Generic method to build any request.

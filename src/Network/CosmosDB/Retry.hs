@@ -13,7 +13,7 @@ import qualified Data.Text as T
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Status
 
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 
 -- | Retry http request with given options.
 retryHttp :: (MonadDelay m, MonadCatch m, MonadLog m, MonadRandom m)

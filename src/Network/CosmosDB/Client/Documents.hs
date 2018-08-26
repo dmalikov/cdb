@@ -15,8 +15,8 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import           Network.HTTP.Types.Status
 
+import Network.CosmosDB.Core
 import Network.CosmosDB.Request
-import Network.CosmosDB.Types
 
 -- | Create a document.
 --

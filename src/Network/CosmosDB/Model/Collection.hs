@@ -5,7 +5,7 @@ import Data.Text
 import GHC.Generics
 import Prelude hiding (id)
 
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 import Network.CosmosDB.Model.IndexingPolicy
 
 -- CosmosDB collection.

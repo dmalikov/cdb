@@ -18,7 +18,7 @@ import qualified Network.HTTP.Types.Status as Http
 import           Test.Hspec
 import           Test.HUnit.Base (assertFailure)
 
-import Network.CosmosDB.Types
+import Network.CosmosDB.Core
 
 shouldBeRight :: (Show e, Show a) => Either e a -> IO a
 shouldBeRight r = do
