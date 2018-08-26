@@ -23,8 +23,6 @@ dependencies:
   - http-client
   - http-client-tls
   - http-types
-  - lens
-  - lens-aeson
   - mtl
   - safe-exceptions
   - text
@@ -49,6 +47,7 @@ library:
     - mime
     - random
     - uri-encode
+    - vector
   exposed-modules:
     - Network.CosmosDB
     - Network.CosmosDB.Types
@@ -80,6 +79,8 @@ tests:
       - hspec
       - hspec-expectations
       - HUnit
+      - lens
+      - lens-aeson
     ghc-options:
       - -fno-warn-missing-fields
       - -threaded

@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 647c698a668cc963e8b42c8d7b6d0b96d797dd93ebdc703aa83f7efb4405e8cd
+-- hash: 2c36168a8fca8fc278f98bc63434e572aad16b352011615395c40c3e45324376
 
 name:                cdb
 version:             0.1
@@ -43,8 +43,6 @@ library
     , http-client
     , http-client-tls
     , http-types
-    , lens
-    , lens-aeson
     , mime
     , mtl
     , random
@@ -54,6 +52,7 @@ library
     , transformers
     , unordered-containers
     , uri-encode
+    , vector
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DefaultSignatures DeriveGeneric GeneralizedNewtypeDeriving StrictData
   ghc-options: -Wall -fhide-source-paths -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fdefer-typed-holes

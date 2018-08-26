@@ -7,12 +7,12 @@ module Network.CosmosDB.Client.Documents
   ) where
 
 import           Control.Exception.Safe
-import           Control.Lens
 import           Data.Aeson
-import           Data.Aeson.Lens
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.HashMap.Strict as HM
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
+import qualified Data.Vector as V
 import           Network.HTTP.Types.Status
 
 import Network.CosmosDB.Request
@@ -125,4 +125,9 @@ queryDocuments c dbId collId query = fmap getDocuments <$> (send c $
     })
 
 getDocuments :: Value -> [Value]
-getDocuments a = a ^.. key "Documents".values
+getDocuments (Object o) =
+  case HM.lookup "Documents" o of
+    Just (Array docs) -> V.toList docs
+    Just _            -> []
+    Nothing           -> []
+getDocuments _ = []
