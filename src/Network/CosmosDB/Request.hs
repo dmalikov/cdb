@@ -81,11 +81,9 @@ sendRequest c RequestOptions {..} = do
                  , Http.method         = reqMethod
                  , Http.responseTimeout = Http.responseTimeoutMicro (30 * 1000 * 1000)
                  }
-  logMessage (ppReq time reqMethod uri)
+  logMessage (ppReq reqMethod uri)
   r <- sendHttp req' (manager c)
-  tAfter <- getTime
-  let timeAfter = T.pack (formatTime defaultTimeLocale timeFormat tAfter)
-  logMessage (ppRes timeAfter r)
+  logMessage (ppRes r)
   if Http.responseStatus r == successStatus
     then pure (Right r)
     else pure (Left (UnexpectedResponseStatusCode r))
@@ -101,8 +99,8 @@ baseUri accountName = "https://" <> accountName <> ".documents.azure.com:443"
 timeFormat :: IsString a => a
 timeFormat = "%a, %d %b %Y %H:%M:%S GMT"
 
-ppReq :: Text -> Http.Method -> String -> Text
-ppReq t rm uri = "[" <> t <> "] >>> " <> T.decodeUtf8 rm <> " " <> T.pack uri
+ppReq :: Http.Method -> String -> Text
+ppReq rm uri = ">>> " <> T.decodeUtf8 rm <> " " <> T.pack uri
 
-ppRes :: Text -> Http.Response a -> Text
-ppRes t r = "[" <> t <> "] <<< " <> T.pack (show (Http.statusCode $ Http.responseStatus r))
+ppRes :: Http.Response a -> Text
+ppRes r = "<<< " <> T.pack (show (Http.statusCode $ Http.responseStatus r))

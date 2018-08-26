@@ -52,7 +52,7 @@ responseHeader :: BSC.ByteString -> Response BSL.ByteString -> Maybe BSC.ByteStr
 responseHeader hn r = snd <$> (listToMaybe $ filter (\(name,_) -> name == mk hn) $ responseHeaders r)
 
 -- | Retry action.
-retry :: (MonadDelay m, MonadCatch m, Exception e, MonadLog m)
+retry :: (MonadDelay m, MonadCatch m, Exception e, MonadLog m, Show l)
   => Int -- ^ retries
   -> (e -> Bool)         -- ^ transient exception
   -> (e -> Int -> m Int) -- ^ transient exception backoff
@@ -67,14 +67,16 @@ retry retries isTransientException backoffException isTransientError backoffErro
     res <- catch action (\e -> if isTransientException e
                                  then do
                                    backoff <- backoffException e attempt
-                                   logMessage ("retrying transient exception, attempt=" <> T.pack (show attempt) <> ", backoff=" <> T.pack (show backoff))
+                                   logMessage $ "retrying transient exception: " <> T.pack (show e) <> ", attempt=" <> T.pack (show attempt) <> ", backoff=" <> T.pack (show backoff)
                                    delay backoff
                                    go (attempt + 1)
-                                 else throw e)
+                                 else do
+                                   logMessage $ "non transient exception: " <> T.pack (show e)
+                                   throw e)
     case res of
       Left e | isTransientError e -> do
            backoff <- backoffError e attempt
-           logMessage ("retrying transient error, attempt=" <> T.pack (show attempt) <> ", backoff=" <> T.pack (show backoff))
+           logMessage ("retrying transient error: " <> T.pack (show e) <> ", attempt=" <> T.pack (show attempt) <> ", backoff=" <> T.pack (show backoff))
            delay backoff
            go (attempt + 1)
       r -> pure r

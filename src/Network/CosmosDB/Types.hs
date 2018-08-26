@@ -36,8 +36,10 @@ import qualified Data.ByteString.Lazy as BSL
 import           Data.Semigroup ((<>))
 import           Data.String (IsString)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Time.Clock
+import           Data.Time.Format
 import           Data.Typeable (Typeable)
 import qualified Network.HTTP.Client as Http
 import qualified Network.HTTP.Client.TLS as Http
@@ -141,7 +143,10 @@ class Monad m => MonadLog m where
   logMessage = lift . logMessage
 
 instance MonadLog IO where
-  logMessage = T.putStrLn
+  logMessage m = do
+    t <- getCurrentTime
+    let ts = T.pack (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S:%q")) t)
+    T.putStrLn $ "[" <> ts <> "] " <> m
 
 instance MonadLog m => MonadLog (StateT w m)
 instance MonadLog m => MonadLog (ReaderT s m)
