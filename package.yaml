@@ -23,11 +23,9 @@ dependencies:
   - http-client
   - http-client-tls
   - http-types
-  - mtl
   - safe-exceptions
   - text
   - time
-  - transformers
   - unordered-containers
 
 default-extensions:

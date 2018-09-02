@@ -6,7 +6,6 @@ module Network.CosmosDB.Client.Documents
   , queryDocuments
   ) where
 
-import           Control.Exception.Safe
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
@@ -22,12 +21,11 @@ import Network.CosmosDB.Request
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/create-a-document>
 createDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionId
   -> Value -- ^ document
-  -> m (Either Error Value)
+  -> IO (Either Error Value)
 createDocument c dbId collId value = send c $
   RequestOptions
     { reqResource   = Docs dbId collId
@@ -42,12 +40,11 @@ createDocument c dbId collId value = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/get-a-document>
 getDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionId
   -> DocumentId -- ^ document name, unique documentId
-  -> m (Either Error Value)
+  -> IO (Either Error Value)
 getDocument c dbId collId docId = send c $
   RequestOptions
     { reqResource   = Doc dbId collId docId
@@ -64,13 +61,12 @@ getDocument c dbId collId docId = send c $
 --
 -- It's a responsibility of a caller to provide 'DocumentId' matching the `id` field of the document.
 replaceDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionId
   -> DocumentId -- ^ document name, unique documentId
   -> Value -- ^ document
-  -> m (Either Error Value)
+  -> IO (Either Error Value)
 replaceDocument c dbId collId docId value = send c $
   RequestOptions
     { reqResource   = Doc dbId collId docId
@@ -85,13 +81,12 @@ replaceDocument c dbId collId docId value = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/delete-a-document>
 deleteDocument
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> Maybe Text -- ^ etag to match, will be sent as "If-Match" header
   -> DatabaseId
   -> CollectionId
   -> DocumentId
-  -> m (Either Error ())
+  -> IO (Either Error ())
 deleteDocument c mEtag dbId collId docId = send_ c $
   RequestOptions
     { reqResource   = Doc dbId collId docId
@@ -106,12 +101,11 @@ deleteDocument c mEtag dbId collId docId = send_ c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/query-documents>
 queryDocuments
-  :: (MonadThrow m, MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionId
   -> Text
-  -> m (Either Error [Value])
+  -> IO (Either Error [Value])
 queryDocuments c dbId collId query = fmap getDocuments <$> (send c $
   RequestOptions
     { reqResource   = Docs dbId collId

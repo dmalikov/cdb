@@ -2,7 +2,6 @@ module Network.CosmosDB.Client.Databases
   ( listDatabases
   ) where
 
-import Control.Exception.Safe
 import Network.HTTP.Types.Status
 
 import Network.CosmosDB.Core
@@ -13,9 +12,8 @@ import Network.CosmosDB.Request
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/list-databases>
 listDatabases
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
-  -> m (Either Error Databases)
+  :: Connection
+  -> IO (Either Error Databases)
 listDatabases c = send c $
   RequestOptions
     { reqResource   = Dbs

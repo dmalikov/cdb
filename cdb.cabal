@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f698e6a4eb16c3c10ba84a03e4763a27622518a81ae11cb4647175b4a5155069
+-- hash: 01fb4fc079d9e4febd56cfd1fae0861d841411a3d723299e5639b248cbbcd477
 
 name:                cdb
 version:             0.1
@@ -43,12 +43,10 @@ library
     , http-client-tls
     , http-types
     , mime
-    , mtl
     , random
     , safe-exceptions
     , text
     , time
-    , transformers
     , unordered-containers
     , uri-encode
     , vector
@@ -61,11 +59,8 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       SpecHelpers
-      Network.CosmosDB.Client.CollectionsSpec
-      Network.CosmosDB.Client.DatabasesSpec
-      Network.CosmosDB.Client.DocumentsSpec
-      Network.CosmosDB.Mocks
-      Network.CosmosDB.RetrySpec
+      Network.CosmosDB.Model.CollectionSpec
+      Network.CosmosDB.Model.DatabaseSpec
       Paths_cdb
   hs-source-dirs:
       test
@@ -85,11 +80,9 @@ test-suite spec
     , http-types
     , lens
     , lens-aeson
-    , mtl
     , safe-exceptions
     , text
     , time
-    , transformers
     , unordered-containers
   default-language: Haskell2010
   default-extensions: DuplicateRecordFields GADTs OverloadedStrings RecordWildCards ScopedTypeVariables TypeApplications ViewPatterns DuplicateRecordFields GADTs LambdaCase OverloadedStrings RecordWildCards

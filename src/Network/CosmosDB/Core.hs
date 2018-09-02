@@ -12,23 +12,17 @@ module Network.CosmosDB.Core
     -- * Request
   , RequestOptions(..)
   , RetryOptions(..)
-  , MonadTime(..)
-  , MonadHttp(..)
-  , MonadDelay(..)
-  , MonadRandom(..)
-  , MonadLog(..)
   , ResponseException(..)
   , Error(..)
   , isUnexpectedCode
   , defaultRetryOptions
   , fullJitterBackoff
+  , logMessage
+  , delay
   ) where
 
 import           Control.Concurrent (threadDelay)
 import           Control.Exception.Safe (Exception)
-import           Control.Monad.Reader (ReaderT)
-import           Control.Monad.State (StateT)
-import           Control.Monad.Trans.Class (MonadTrans(..))
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Semigroup ((<>))
@@ -53,22 +47,21 @@ data Connection = Connection
   }
 
 -- | Request Options.
-data RequestOptions m = RequestOptions
+data RequestOptions = RequestOptions
   { reqResource   :: Resource
   , reqHeaders    :: Http.RequestHeaders
   , reqMethod     :: Http.Method
   , reqBodyMay    :: Maybe BSL.ByteString
   , successStatus :: Http.Status
-  , retryOptions  :: RetryOptions m
+  , retryOptions  :: RetryOptions
   }
 
 -- Initialize the connection with given account name and master key.
 newConnection
-  :: MonadHttp m
-  => Text -- ^ account name
+  :: Text -- ^ account name
   -> Text -- ^ master key
-  -> m Connection
-newConnection an mk = Connection an mk <$> newSession
+  -> IO Connection
+newConnection an mk = Connection an mk <$> Http.newTlsManager
 
 -- | Error during HTTP request.
 data Error
@@ -84,74 +77,6 @@ data ResponseException
   deriving (Eq, Show, Typeable)
 
 instance Exception ResponseException
-
-class Monad m => MonadTime m where
-  getTime :: m UTCTime
-
-  default getTime :: (MonadTrans t, MonadTime m', m ~ t m') => m UTCTime
-  getTime = lift getTime
-
-instance MonadTime IO where
-  getTime = getCurrentTime
-
-instance MonadTime m => MonadTime (StateT w m)
-instance MonadTime m => MonadTime (ReaderT s m)
-
-class (Monad m, Functor m) => MonadHttp m where
-  newSession :: m Http.Manager
-  sendHttp   :: Http.Request -> Http.Manager -> m (Http.Response BSL.ByteString)
-
-  default newSession :: (MonadTrans t, MonadHttp m', m ~ t m') => m Http.Manager
-  newSession = lift newSession
-
-  default sendHttp :: (MonadTrans t, MonadHttp m', m ~ t m') => Http.Request -> Http.Manager -> m (Http.Response BSL.ByteString)
-  sendHttp r m = lift (sendHttp r m)
-
-instance MonadHttp IO where
-  newSession = Http.newTlsManager
-  sendHttp   = Http.httpLbs
-
-instance MonadHttp m => MonadHttp (ReaderT s m)
-
-class Monad m => MonadDelay m where
-  -- | Delay in milliseconds
-  delay :: Int -> m ()
-
-  default delay :: (MonadTrans t, MonadDelay m', m ~ t m') => Int -> m ()
-  delay = lift . delay
-
-instance MonadDelay IO where
-  delay i = threadDelay (i * 1000)
-
-instance MonadDelay m => MonadDelay (StateT w m)
-instance MonadDelay m => MonadDelay (ReaderT s m)
-
-class Monad m => MonadRandom m where
-  randomLoHi :: (Int, Int) -> m Int
-
-  default randomLoHi :: (MonadTrans t, MonadRandom m', m ~ t m') => (Int, Int) -> m Int
-  randomLoHi = lift . randomLoHi
-
-instance MonadRandom IO where
-  randomLoHi = randomRIO
-
-instance MonadRandom m => MonadRandom (StateT w m)
-instance MonadRandom m => MonadRandom (ReaderT s m)
-
-class Monad m => MonadLog m where
-  logMessage :: Text -> m ()
-
-  default logMessage :: (MonadTrans t, MonadLog m', m ~ t m') => Text -> m ()
-  logMessage = lift . logMessage
-
-instance MonadLog IO where
-  logMessage m = do
-    t <- getCurrentTime
-    let ts = T.pack (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S:%q")) t)
-    T.putStrLn $ "[" <> ts <> "] " <> m
-
-instance MonadLog m => MonadLog (StateT w m)
-instance MonadLog m => MonadLog (ReaderT s m)
 
 newtype DatabaseId   = DatabaseId   { unDatabaseId   :: Text } deriving (Eq, IsString, Show)
 newtype CollectionId = CollectionId { unCollectionId :: Text } deriving (Eq, IsString, Show)
@@ -193,10 +118,10 @@ address (Docs  (DatabaseId dbId) (CollectionId collId)                   ) = "/d
 address (Doc   (DatabaseId dbId) (CollectionId collId) (DocumentId docId)) = "/dbs/" <> dbId <> "/colls/" <> collId <> "/docs/" <> docId
 
 -- | Retry options.
-data RetryOptions m = RetryOptions
+data RetryOptions = RetryOptions
   { retries                  :: Int
   , defaultThrottlingBackoff :: Int -- ^ default backoff in milliseconds in case header value cannot be used.
-  , nextBackoff              :: Int -> m Int
+  , nextBackoff              :: Int -> IO Int
   }
 
 -- | Default retry options. This setting is used for any Client operation by default. In order to overwrite them, consider using raw 'Network.CosmosDB.Request.send'.
@@ -206,17 +131,26 @@ data RetryOptions m = RetryOptions
 -- * retry timeout (default client timeout is 30s)
 -- * FullJitter exponential backoff
 -- * retry 429 with respect of "x-ms-retry-after-ms" header value (<https://docs.microsoft.com/en-us/rest/api/cosmos-db/common-cosmosdb-rest-response-headers>)
-defaultRetryOptions :: MonadRandom m => RetryOptions m
+defaultRetryOptions :: RetryOptions
 defaultRetryOptions = RetryOptions 3 15000 (fullJitterBackoff 30000 700)
 
-fullJitterBackoff :: MonadRandom m
-  => Int -- ^ cap
+fullJitterBackoff
+  :: Int -- ^ cap
   -> Int -- ^ base
   -> Int -- ^ iteration
-  -> m Int
+  -> IO Int
 fullJitterBackoff cap base i = do
   let temp :: Int = min cap (base * (pow 2 i))
-  randomLoHi (temp `div` 2, temp)
+  randomRIO (temp `div` 2, temp)
  where
   pow :: Int -> Int -> Int
   pow a b = floor @Double ((fromIntegral a) ** (fromIntegral b))
+
+logMessage :: Text -> IO ()
+logMessage m = do
+  t <- getCurrentTime
+  let ts = T.pack (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S:%q")) t)
+  T.putStrLn $ "[" <> ts <> "] " <> m
+
+delay :: Int -> IO ()
+delay i = threadDelay (i * 1000)

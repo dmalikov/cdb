@@ -16,8 +16,8 @@ import           Network.HTTP.Types.Status
 import Network.CosmosDB.Core
 
 -- | Retry http request with given options.
-retryHttp :: (MonadDelay m, MonadCatch m, MonadLog m, MonadRandom m)
-  => RetryOptions m -> m (Either Error a) -> m (Either Error a)
+retryHttp
+  :: RetryOptions -> IO (Either Error a) -> IO (Either Error a) -- TODO move to Http?
 retryHttp RetryOptions {..} = retry retries isTimeout (const nextBackoff) isTransientError responseBackoff
 
  where
@@ -52,14 +52,14 @@ responseHeader :: BSC.ByteString -> Response BSL.ByteString -> Maybe BSC.ByteStr
 responseHeader hn r = snd <$> (listToMaybe $ filter (\(name,_) -> name == mk hn) $ responseHeaders r)
 
 -- | Retry action.
-retry :: (MonadDelay m, MonadCatch m, Exception e, MonadLog m, Show l)
+retry :: (Exception e, Show l)
   => Int -- ^ retries
   -> (e -> Bool)         -- ^ transient exception
-  -> (e -> Int -> m Int) -- ^ transient exception backoff
+  -> (e -> Int -> IO Int) -- ^ transient exception backoff
   -> (l -> Bool)         -- ^ transient error
-  -> (l -> Int -> m Int) -- ^ transient error backoff
-  -> m (Either l a)      -- ^ action
-  -> m (Either l a)
+  -> (l -> Int -> IO Int) -- ^ transient error backoff
+  -> IO (Either l a)      -- ^ action
+  -> IO (Either l a)
 retry retries isTransientException backoffException isTransientError backoffError action = go 1
  where
   go attempt | attempt == retries + 1 = action

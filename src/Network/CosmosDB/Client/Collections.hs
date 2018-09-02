@@ -1,6 +1,5 @@
 module Network.CosmosDB.Client.Collections where
 
-import Control.Exception.Safe
 import Data.Aeson (encode)
 import Network.HTTP.Types.Status
 
@@ -12,11 +11,10 @@ import Network.CosmosDB.Request
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/create-a-collection>
 createCollection
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionCreationOptions
-  -> m (Either Error Collection)
+  -> IO (Either Error Collection)
 createCollection c dbId cco = send c $
   RequestOptions
     { reqResource   = Colls dbId
@@ -31,10 +29,9 @@ createCollection c dbId cco = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/list-collections>
 listCollections
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
-  -> m (Either Error DocumentCollections)
+  -> IO (Either Error DocumentCollections)
 listCollections c dbId = send c $
   RequestOptions
     { reqResource   = Colls dbId
@@ -49,11 +46,10 @@ listCollections c dbId = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/get-a-collection>
 getCollection
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionId
-  -> m (Either Error Collection)
+  -> IO (Either Error Collection)
 getCollection c dbId collId = send c $
   RequestOptions
     { reqResource   = Coll dbId collId
@@ -68,11 +64,10 @@ getCollection c dbId collId = send c $
 --
 -- <https://docs.microsoft.com/en-us/rest/api/cosmos-db/delete-a-collection>
 deleteCollection
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadRandom m, MonadLog m)
-  => Connection
+  :: Connection
   -> DatabaseId
   -> CollectionId
-  -> m (Either Error ())
+  -> IO (Either Error ())
 deleteCollection c dbId collId = send_ c $
   RequestOptions
     { reqResource   = Coll dbId collId

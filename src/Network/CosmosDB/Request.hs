@@ -16,6 +16,7 @@ import           Data.Semigroup ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Text (pack, Text)
+import           Data.Time.Clock
 import           Data.Time.Format
 import qualified Network.HTTP.Client as Http
 import qualified Network.HTTP.Types.Method as Http
@@ -30,10 +31,10 @@ import Network.CosmosDB.Retry
 -- In case of response status code not matching the expected one set in '_successStatusCode'.
 -- In case of json parsing exception, 'DeserializationException' would be thrown.
 send
-  :: (MonadCatch m, MonadTime m, MonadHttp m, FromJSON a, MonadDelay m, MonadLog m, MonadRandom m)
+  :: (FromJSON a)
   => Connection
-  -> RequestOptions m
-  -> m (Either Error a)
+  -> RequestOptions
+  -> IO (Either Error a)
 send c ro = parse =<< sendAndRetry c ro
  where
   parse (Left e) = pure (Left e)
@@ -44,28 +45,25 @@ send c ro = parse =<< sendAndRetry c ro
 
 -- | Void 'send'.
 send_
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m, MonadRandom m)
-  => Connection
-  -> RequestOptions m
-  -> m (Either Error ())
+  :: Connection
+  -> RequestOptions
+  -> IO (Either Error ())
 send_ c ro = void <$> sendAndRetry c ro
 
 -- | 'sendRequest' with retries.
 sendAndRetry
-  :: (MonadCatch m, MonadTime m, MonadHttp m, MonadDelay m, MonadLog m, MonadRandom m)
-  => Connection
-  -> RequestOptions m
-  -> m (Either Error (Http.Response BSL.ByteString))
+  :: Connection
+  -> RequestOptions
+  -> IO (Either Error (Http.Response BSL.ByteString))
 sendAndRetry c ro@RequestOptions {..} = retryHttp retryOptions (sendRequest c ro)
 
 -- | Send request without retries.
 sendRequest
-  :: (MonadThrow m, MonadTime m, MonadHttp m, MonadLog m)
-  => Connection
-  -> RequestOptions m
-  -> m (Either Error (Http.Response BSL.ByteString))
+  :: Connection
+  -> RequestOptions
+  -> IO (Either Error (Http.Response BSL.ByteString))
 sendRequest c RequestOptions {..} = do
-  t <- getTime
+  t <- getCurrentTime
   let time  = T.pack (formatTime defaultTimeLocale timeFormat t)
       token = genAuthToken c (T.decodeUtf8 reqMethod) reqResource time
       uri   = T.unpack (baseUri (accountName c) <> address reqResource)
@@ -82,7 +80,7 @@ sendRequest c RequestOptions {..} = do
                  , Http.responseTimeout = Http.responseTimeoutMicro (30 * 1000 * 1000)
                  }
   logMessage (ppReq reqMethod uri)
-  r <- sendHttp req' (manager c)
+  r <- Http.httpLbs req' (manager c)
   logMessage (ppRes r)
   if Http.responseStatus r == successStatus
     then pure (Right r)
