@@ -1,78 +1,82 @@
 {-# Language CPP #-}
+{-# Language DataKinds #-}
+{-# Language KindSignatures #-}
 module Network.CosmosDB.Request
-  ( -- * Connection
-    Connection(..)
-  , newConnection
-    -- * Request
-  , send
+  ( send
   , send_
+  , resource
+  , method
+  , headers
+  , status
+  , body
+  , done
   ) where
 
-import           Control.Exception.Safe
-import           Control.Monad (void)
-import           Data.Aeson hiding (Options)
+import qualified Control.Exception.Safe as Safe
+import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
-import           Data.String (IsString)
 #if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup ((<>))
 #endif
+import           Data.String (IsString)
 import qualified Data.Text as T
+import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
-import           Data.Text (pack, Text)
 import           Data.Time.Clock
 import           Data.Time.Format
 import qualified Network.HTTP.Client as Http
+import qualified Network.HTTP.Types.Header as Http
 import qualified Network.HTTP.Types.Method as Http
 import qualified Network.HTTP.Types.Status as Http
 
 import Network.CosmosDB.Auth
 import Network.CosmosDB.Core
 
--- | Generic method to build any request.
---
--- In case of response status code not matching the expected one set in '_successStatusCode'.
--- In case of json parsing exception, 'DeserializationException' would be thrown.
-send
-  :: (FromJSON a)
-  => Connection
-  -> RequestOptions
-  -> IO (Either Error a)
-send c ro = parse =<< sendAndRetry c ro
- where
-  parse (Left e) = pure (Left e)
-  parse (Right r) =
-    case eitherDecode (Http.responseBody r) of
-      Left e -> throw (DeserializationException (pack e))
-      Right a -> pure (Right a)
+data Resource'd = Yr | Nr
+data Method'd = Ym | Nm
 
--- | Void 'send'.
-send_
-  :: Connection
-  -> RequestOptions
-  -> IO (Either Error ())
-send_ c ro = void <$> sendAndRetry c ro
+-- CosmosDB Operation
+data O (r :: Resource'd) (m :: Method'd) a = O
+  { o_resource     :: Resource
+  , o_headers      :: Http.RequestHeaders
+  , o_method       :: Http.Method
+  , o_body         :: BSL.ByteString
+  , o_status       :: Http.Status
+  , o_retryOptions :: RetryOptions
+  }
 
--- | 'sendRequest' with retries.
-sendAndRetry
-  :: Connection
-  -> RequestOptions
-  -> IO (Either Error (Http.Response BSL.ByteString))
-sendAndRetry c ro@RequestOptions {..} = do
-  r <- retryHttp retryOptions (sendRequest c ro)
-  if Http.responseStatus r == successStatus
-    then pure (Right r)
-    else pure (Left (UnexpectedResponseStatusCode r))
+resource :: Resource -> O 'Nr m a -> O 'Yr m a
+resource r o = o { o_resource = r }
 
--- | Send request without retries.
-sendRequest
-  :: Connection
-  -> RequestOptions
-  -> IO (Http.Response BSL.ByteString)
-sendRequest c RequestOptions {..} = do
+method :: Http.Method -> O r 'Nm a -> O r 'Ym a
+method m o = o { o_method = m }
+
+headers :: Http.RequestHeaders -> O r m a -> O r m a
+headers hs o = o { o_headers = hs }
+
+status :: Http.Status -> O r m a -> O r m a
+status s o = o { o_status = s }
+
+body :: BSL.ByteString -> O r m a -> O r m a
+body bs o = o { o_body = bs }
+
+done :: O 'Nr 'Nm a
+done = O
+  { o_resource = Dbs
+  , o_headers = []
+  , o_method = "get"
+  , o_body = ""
+  , o_status = Http.ok200
+  , o_retryOptions = defaultRetryOptions
+  }
+
+-- | Build request.
+breq :: Connection -> O 'Yr 'Ym a -> IO Http.Request
+breq c O {..} = do
   t <- getCurrentTime
   let time  = T.pack (formatTime defaultTimeLocale timeFormat t)
-      token = genAuthToken c (T.decodeUtf8 reqMethod) reqResource time
-      uri   = T.unpack (baseUri (accountName c) <> address reqResource)
+      token = genAuthToken c (T.decodeUtf8 o_method) o_resource time
+      uri   = T.unpack (baseUri (accountName c) <> address o_resource)
   req <- Http.parseRequest uri
   let defaultHeaders =
         [ ("Authorization", T.encodeUtf8 token    )
@@ -80,15 +84,36 @@ sendRequest c RequestOptions {..} = do
         , ("x-ms-date"    , T.encodeUtf8 time     )
         , ("Accept"       , "application/json"    )
         ]
-  let req' = req { Http.requestHeaders = reqHeaders ++ defaultHeaders
-                 , Http.requestBody    = maybe "" Http.RequestBodyLBS reqBodyMay
-                 , Http.method         = reqMethod
-                 , Http.responseTimeout = Http.responseTimeoutMicro (30 * 1000 * 1000)
-                 }
-  logMessage (ppReq reqMethod uri)
-  r <- Http.httpLbs req' (manager c)
-  logMessage (ppRes r)
-  pure r
+  pure $ req
+    { Http.requestHeaders  = o_headers ++ defaultHeaders
+    , Http.requestBody     = Http.RequestBodyLBS o_body
+    , Http.method          = o_method
+    , Http.responseTimeout = Http.responseTimeoutMicro (30 * 1000 * 1000)
+    }
+
+-- | Send request.
+send :: Aeson.FromJSON a => Connection -> O 'Yr 'Ym a -> IO (Either Error a)
+send c o@O {..} = do
+  req <- breq c o
+  res <- retryHttp o_retryOptions (Http.httpLbs req (manager c))
+  if Http.responseStatus res == o_status
+    then
+      case Aeson.eitherDecode (Http.responseBody res) of
+        Left e -> Safe.throw (DeserializationException (T.pack e))
+        Right v -> pure (Right v)
+    else
+      pure (Left (UnexpectedResponseStatusCode res))
+
+-- | Void 'send'.
+send_ :: Connection -> O 'Yr 'Ym () -> IO (Either Error ())
+send_ c o@O {..} = do
+  req <- breq c o
+  res <- retryHttp o_retryOptions (Http.httpLbs req (manager c))
+  if Http.responseStatus res == o_status
+    then
+      pure (Right ())
+    else
+      pure (Left (UnexpectedResponseStatusCode res))
 
 msVersion :: Text
 msVersion = "2016-07-11"
@@ -100,9 +125,3 @@ baseUri accountName = "https://" <> accountName <> ".documents.azure.com:443"
 --- Tue, 01 Nov 1994 08:12:31 GMT
 timeFormat :: IsString a => a
 timeFormat = "%a, %d %b %Y %H:%M:%S GMT"
-
-ppReq :: Http.Method -> String -> Text
-ppReq rm uri = ">>> " <> T.decodeUtf8 rm <> " " <> T.pack uri
-
-ppRes :: Http.Response a -> Text
-ppRes r = "<<< " <> T.pack (show (Http.statusCode $ Http.responseStatus r))

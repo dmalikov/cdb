@@ -14,12 +14,8 @@ import Network.CosmosDB.Request
 listDatabases
   :: Connection
   -> IO (Either Error Databases)
-listDatabases c = send c $
-  RequestOptions
-    { reqResource   = Dbs
-    , reqHeaders    = mempty
-    , reqMethod     = "get"
-    , successStatus = ok200
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Nothing
-    }
+listDatabases c = send c
+  . resource Dbs
+  . method "get"
+  . status ok200
+  $ done

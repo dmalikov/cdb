@@ -1,7 +1,7 @@
 module Network.CosmosDB.Client.Collections where
 
-import Data.Aeson (encode)
-import Network.HTTP.Types.Status
+import qualified Data.Aeson as Aeson
+import           Network.HTTP.Types.Status
 
 import Network.CosmosDB.Core
 import Network.CosmosDB.Model.Collection
@@ -15,15 +15,12 @@ createCollection
   -> DatabaseId
   -> CollectionCreationOptions
   -> IO (Either Error Collection)
-createCollection c dbId cco = send c $
-  RequestOptions
-    { reqResource   = Colls dbId
-    , reqHeaders    = mempty
-    , reqMethod     = "post"
-    , successStatus = created201
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Just (encode cco)
-    }
+createCollection c dbId cco = send c
+  . resource (Colls dbId)
+  . method "post"
+  . status created201
+  . body (Aeson.encode cco)
+  $ done
 
 -- | List collections.
 --
@@ -32,15 +29,11 @@ listCollections
   :: Connection
   -> DatabaseId
   -> IO (Either Error DocumentCollections)
-listCollections c dbId = send c $
-  RequestOptions
-    { reqResource   = Colls dbId
-    , reqHeaders    = mempty
-    , reqMethod     = "get"
-    , successStatus = ok200
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Nothing
-    }
+listCollections c dbId = send c
+  . resource (Colls dbId)
+  . method "get"
+  . status ok200
+  $ done
 
 -- | Get a collection.
 --
@@ -50,15 +43,11 @@ getCollection
   -> DatabaseId
   -> CollectionId
   -> IO (Either Error Collection)
-getCollection c dbId collId = send c $
-  RequestOptions
-    { reqResource   = Coll dbId collId
-    , reqHeaders    = mempty
-    , reqMethod     = "get"
-    , successStatus = ok200
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Nothing
-    }
+getCollection c dbId collId = send c
+  . resource (Coll dbId collId)
+  . method "get"
+  . status ok200
+  $ done
 
 -- | Delete a collection.
 --
@@ -68,12 +57,8 @@ deleteCollection
   -> DatabaseId
   -> CollectionId
   -> IO (Either Error ())
-deleteCollection c dbId collId = send_ c $
-  RequestOptions
-    { reqResource   = Coll dbId collId
-    , reqHeaders    = mempty
-    , reqMethod     = "delete"
-    , successStatus = noContent204
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Nothing
-    }
+deleteCollection c dbId collId = send_ c
+  . resource (Coll dbId collId)
+  . method "delete"
+  . status noContent204
+  $ done

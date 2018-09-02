@@ -26,15 +26,13 @@ createDocument
   -> CollectionId
   -> Value -- ^ document
   -> IO (Either Error Value)
-createDocument c dbId collId value = send c $
-  RequestOptions
-    { reqResource   = Docs dbId collId
-    , reqHeaders    = [("Content-Type", "application/json")]
-    , reqMethod     = "post"
-    , successStatus = created201
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Just (encode value)
-    }
+createDocument c dbId collId value = send c
+  . resource (Docs dbId collId)
+  . headers [("Content-Type", "application/json")]
+  . method "post"
+  . status created201
+  . body (encode value)
+  $ done
 
 -- | Get a document.
 --
@@ -45,15 +43,12 @@ getDocument
   -> CollectionId
   -> DocumentId -- ^ document name, unique documentId
   -> IO (Either Error Value)
-getDocument c dbId collId docId = send c $
-  RequestOptions
-    { reqResource   = Doc dbId collId docId
-    , reqHeaders    = [("Content-Type", "application/json")]
-    , reqMethod     = "get"
-    , successStatus = ok200
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Nothing
-    }
+getDocument c dbId collId docId = send c
+  . resource (Doc dbId collId docId)
+  . headers [("Content-Type", "application/json")]
+  . method "get"
+  . status ok200
+  $ done
 
 -- | Replace a document.
 --
@@ -67,15 +62,13 @@ replaceDocument
   -> DocumentId -- ^ document name, unique documentId
   -> Value -- ^ document
   -> IO (Either Error Value)
-replaceDocument c dbId collId docId value = send c $
-  RequestOptions
-    { reqResource   = Doc dbId collId docId
-    , reqHeaders    = [("Content-Type", "application/json")]
-    , reqMethod     = "put"
-    , successStatus = ok200
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Just (encode value)
-    }
+replaceDocument c dbId collId docId value = send c
+  . resource (Doc dbId collId docId)
+  . headers [("Content-Type", "application/json")]
+  . method "put"
+  . status ok200
+  . body (encode value)
+  $ done
 
 -- | Delete a document.
 --
@@ -87,15 +80,12 @@ deleteDocument
   -> CollectionId
   -> DocumentId
   -> IO (Either Error ())
-deleteDocument c mEtag dbId collId docId = send_ c $
-  RequestOptions
-    { reqResource   = Doc dbId collId docId
-    , reqHeaders    = maybe [] (\v -> [("If-Match", T.encodeUtf8 v)]) mEtag
-    , reqMethod     = "delete"
-    , successStatus = noContent204
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Nothing
-    }
+deleteDocument c mEtag dbId collId docId = send_ c
+  . resource (Doc dbId collId docId)
+  . headers (maybe [] (\v -> [("If-Match", T.encodeUtf8 v)]) mEtag)
+  . method "delete"
+  . status noContent204
+  $ done
 
 -- | Query json documents in a collection.
 --
@@ -106,17 +96,15 @@ queryDocuments
   -> CollectionId
   -> Text
   -> IO (Either Error [Value])
-queryDocuments c dbId collId query = fmap getDocuments <$> (send c $
-  RequestOptions
-    { reqResource   = Docs dbId collId
-    , reqHeaders    = [ ("x-ms-documentdb-isquery", "true"                  )
-                      , ("Content-Type"           , "application/query+json")
-                      ]
-    , reqMethod     = "post"
-    , successStatus = ok200
-    , retryOptions  = defaultRetryOptions
-    , reqBodyMay    = Just $ BSL.fromStrict $ T.encodeUtf8 query
-    })
+queryDocuments c dbId collId query = fmap getDocuments <$> (send c
+  . resource (Docs dbId collId)
+  . headers [ ("x-ms-documentdb-isquery", "true"                  )
+            , ("Content-Type"           , "application/query+json")
+            ]
+  . method "post"
+  . status ok200
+  . body (BSL.fromStrict $ T.encodeUtf8 query)
+  $ done)
 
 getDocuments :: Value -> [Value]
 getDocuments (Object o) =
