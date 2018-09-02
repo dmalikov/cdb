@@ -1,3 +1,4 @@
+{-# Language CPP #-}
 module Network.CosmosDB.Auth
   ( genAuthToken
   ) where
@@ -6,7 +7,9 @@ import           Crypto.Hash.SHA256
 import qualified Codec.MIME.Base64 as B64
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup ((<>))
+#endif
 import qualified Data.Text as T
 import           Data.Text (Text)
 import           Data.Text.Encoding (encodeUtf8, decodeUtf8)

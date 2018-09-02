@@ -1,3 +1,4 @@
+{-# Language CPP #-}
 module Network.CosmosDB.Core
   ( -- * Connection
     Connection(..)
@@ -11,22 +12,23 @@ module Network.CosmosDB.Core
   , address
     -- * Request
   , RequestOptions(..)
-  , RetryOptions(..)
   , ResponseException(..)
+  , RetryOptions(..)
   , Error(..)
   , isUnexpectedCode
   , defaultRetryOptions
   , fullJitterBackoff
   , logMessage
-  , delay
+  , retryHttp
   ) where
 
-import           Control.Concurrent (threadDelay)
 import           Control.Exception.Safe (Exception)
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
-import           Data.Semigroup ((<>))
 import           Data.String (IsString)
+#if !(MIN_VERSION_base(4,11,0))
+import           Data.Semigroup ((<>))
+#endif
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -38,7 +40,8 @@ import qualified Network.HTTP.Client.TLS as Http
 import qualified Network.HTTP.Types.Header as Http
 import qualified Network.HTTP.Types.Method as Http
 import qualified Network.HTTP.Types.Status as Http
-import           System.Random (randomRIO)
+
+import           Network.Http.Retry
 
 data Connection = Connection
   { accountName :: Text
@@ -117,40 +120,8 @@ address (Coll  (DatabaseId dbId) (CollectionId collId)                   ) = "/d
 address (Docs  (DatabaseId dbId) (CollectionId collId)                   ) = "/dbs/" <> dbId <> "/colls/" <> collId <> "/docs"
 address (Doc   (DatabaseId dbId) (CollectionId collId) (DocumentId docId)) = "/dbs/" <> dbId <> "/colls/" <> collId <> "/docs/" <> docId
 
--- | Retry options.
-data RetryOptions = RetryOptions
-  { retries                  :: Int
-  , defaultThrottlingBackoff :: Int -- ^ default backoff in milliseconds in case header value cannot be used.
-  , nextBackoff              :: Int -> IO Int
-  }
-
--- | Default retry options. This setting is used for any Client operation by default. In order to overwrite them, consider using raw 'Network.CosmosDB.Request.send'.
---
--- * max 3 retries
--- * retry any 5xx
--- * retry timeout (default client timeout is 30s)
--- * FullJitter exponential backoff
--- * retry 429 with respect of "x-ms-retry-after-ms" header value (<https://docs.microsoft.com/en-us/rest/api/cosmos-db/common-cosmosdb-rest-response-headers>)
-defaultRetryOptions :: RetryOptions
-defaultRetryOptions = RetryOptions 3 15000 (fullJitterBackoff 30000 700)
-
-fullJitterBackoff
-  :: Int -- ^ cap
-  -> Int -- ^ base
-  -> Int -- ^ iteration
-  -> IO Int
-fullJitterBackoff cap base i = do
-  let temp :: Int = min cap (base * (pow 2 i))
-  randomRIO (temp `div` 2, temp)
- where
-  pow :: Int -> Int -> Int
-  pow a b = floor @Double ((fromIntegral a) ** (fromIntegral b))
-
 logMessage :: Text -> IO ()
 logMessage m = do
   t <- getCurrentTime
   let ts = T.pack (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S:%q")) t)
   T.putStrLn $ "[" <> ts <> "] " <> m
-
-delay :: Int -> IO ()
-delay i = threadDelay (i * 1000)

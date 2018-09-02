@@ -1,3 +1,4 @@
+{-# Language CPP #-}
 {-# Language QuasiQuotes #-}
 module Network.LockerSpec where
 
@@ -9,7 +10,9 @@ import           Control.Monad
 import qualified Data.Aeson.Lens as L
 import           Data.Aeson.QQ
 import           Data.Either
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup ((<>))
+#endif
 import           Data.Text
 import           Network.CosmosDB
 import qualified Network.HTTP.Client as Http
@@ -20,7 +23,7 @@ import           System.Environment (getEnv)
 import           Test.Hspec
 
 import SpecHelpers
-import Network.CosmosDB.Retry
+import Network.Http.Retry
 import Network.Locker
 
 {-# ANN module ("HLint: ignore Redundant do" :: String) #-}
@@ -179,7 +182,7 @@ mklock' accountName masterKey dbId resources =
     >>= onLeft "failed to create locker"
  where
   action = mklock accountName masterKey dbId resources
-  is429 (CosmosDbError (UnexpectedResponseStatusCode r))
+  is429 (Left (CosmosDbError (UnexpectedResponseStatusCode r)))
     | Http.responseStatus r == Http.tooManyRequests429 = True
     | otherwise = False
   is429 _ = False
@@ -217,9 +220,10 @@ createTestCollection Env {..} = do
     , partitionKey = Nothing
     , defaultTtl = Nothing
     })
-  is429 (UnexpectedResponseStatusCode r)
+  is429 (Left (UnexpectedResponseStatusCode r))
     | Http.responseStatus r == Http.tooManyRequests429 = True
     | otherwise = False
+  is429 _ = False
 
 deleteTestCollection :: Env -> CollectionId -> IO ()
 deleteTestCollection Env {..} coll = do

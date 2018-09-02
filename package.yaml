@@ -57,7 +57,7 @@ library:
     - Network.CosmosDB.Model.Database
     - Network.CosmosDB.Model.IndexingPolicy
     - Network.CosmosDB.Request
-    - Network.CosmosDB.Retry
+    - Network.Http.Retry
   default-extensions:
     - DefaultSignatures
     - DeriveGeneric

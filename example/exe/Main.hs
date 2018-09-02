@@ -1,11 +1,14 @@
+{-# Language CPP #-}
 module Main (main) where
 
-import Control.Concurrent.Async
-import Data.Text hiding (filter, map)
-import Network.CosmosDB
-import Data.Semigroup ((<>))
-import Prelude hiding (id)
-import System.Environment (getEnv)
+import           Control.Concurrent.Async
+import           Data.Text hiding (filter, map)
+import           Network.CosmosDB
+#if !(MIN_VERSION_base(4,11,0))
+import           Data.Semigroup ((<>))
+#endif
+import           Prelude hiding (id)
+import           System.Environment (getEnv)
 
 main :: IO ()
 main = do

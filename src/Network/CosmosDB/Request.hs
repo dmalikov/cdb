@@ -1,3 +1,4 @@
+{-# Language CPP #-}
 module Network.CosmosDB.Request
   ( -- * Connection
     Connection(..)
@@ -12,7 +13,9 @@ import           Control.Monad (void)
 import           Data.Aeson hiding (Options)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.String (IsString)
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup ((<>))
+#endif
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Text (pack, Text)
@@ -24,7 +27,6 @@ import qualified Network.HTTP.Types.Status as Http
 
 import Network.CosmosDB.Auth
 import Network.CosmosDB.Core
-import Network.CosmosDB.Retry
 
 -- | Generic method to build any request.
 --
@@ -55,13 +57,17 @@ sendAndRetry
   :: Connection
   -> RequestOptions
   -> IO (Either Error (Http.Response BSL.ByteString))
-sendAndRetry c ro@RequestOptions {..} = retryHttp retryOptions (sendRequest c ro)
+sendAndRetry c ro@RequestOptions {..} = do
+  r <- retryHttp retryOptions (sendRequest c ro)
+  if Http.responseStatus r == successStatus
+    then pure (Right r)
+    else pure (Left (UnexpectedResponseStatusCode r))
 
 -- | Send request without retries.
 sendRequest
   :: Connection
   -> RequestOptions
-  -> IO (Either Error (Http.Response BSL.ByteString))
+  -> IO (Http.Response BSL.ByteString)
 sendRequest c RequestOptions {..} = do
   t <- getCurrentTime
   let time  = T.pack (formatTime defaultTimeLocale timeFormat t)
@@ -82,9 +88,7 @@ sendRequest c RequestOptions {..} = do
   logMessage (ppReq reqMethod uri)
   r <- Http.httpLbs req' (manager c)
   logMessage (ppRes r)
-  if Http.responseStatus r == successStatus
-    then pure (Right r)
-    else pure (Left (UnexpectedResponseStatusCode r))
+  pure r
 
 msVersion :: Text
 msVersion = "2016-07-11"

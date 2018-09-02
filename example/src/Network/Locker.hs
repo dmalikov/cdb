@@ -1,3 +1,4 @@
+{-# Language CPP #-}
 {-# Language StrictData #-}
 
 -- |
@@ -122,7 +123,9 @@ import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.Aeson.Types hiding (parseField)
 import           Data.Maybe
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup ((<>))
+#endif
 import qualified Data.Text as T
 import           Data.Text (Text)
 import           Data.UUID (toText)
@@ -132,7 +135,7 @@ import qualified Network.HTTP.Types.Status as Http
 import           System.Random (randomRIO)
 
 import Network.CosmosDB
-import Network.CosmosDB.Retry
+import Network.Http.Retry
 
 -- | Locker.
 data Locker = Locker
@@ -211,7 +214,8 @@ lock
   -> IO (Either LockerError LRes)
 lock locker@Locker {..} sec = retry 3 (\(SomeException _) -> False) (\_ _ -> pure 0) isTransientError backoffF (lockNoRetry locker sec)
  where
-  isTransientError (CosmosDbError (UnexpectedResponseStatusCode r))
+  isTransientError :: Either LockerError LRes -> Bool
+  isTransientError (Left (CosmosDbError (UnexpectedResponseStatusCode r)))
     | Http.responseStatus r == Http.conflict409 = True
   isTransientError _ = False
   backoffF _ = fullJitterBackoff 30000 1000

@@ -4,7 +4,7 @@ cabal-version: >= 1.10
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 01fb4fc079d9e4febd56cfd1fae0861d841411a3d723299e5639b248cbbcd477
+-- hash: 3c3f69d41663b6539808cf44b488e90caa6576a7730da12762273da0ec558659
 
 name:                cdb
 version:             0.1
@@ -30,7 +30,7 @@ library
       Network.CosmosDB.Model.Database
       Network.CosmosDB.Model.IndexingPolicy
       Network.CosmosDB.Request
-      Network.CosmosDB.Retry
+      Network.Http.Retry
   other-modules:
       Paths_cdb
   build-depends:
