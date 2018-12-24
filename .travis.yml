@@ -4,7 +4,8 @@ language: generic
 env:
   matrix:
     - GHCVER=8.2 STACK_YAML=stack-8.2.yaml
-    - GHCVER=8.4 STACK_YAML=stack.yaml
+    - GHCVER=8.4 STACK_YAML=stack-8.4.yaml
+    - GHCVER=8.6 STACK_YAML=stack.yaml
 
 install:
   # stack

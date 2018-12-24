@@ -1,10 +1,10 @@
-cabal-version: >= 1.10
+cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.29.7.
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aeb5b911d873fac2e3e0f4fee1265a5710c8f03a666d022ace54537c82aa506a
+-- hash: ddc0b5bfd3680aeb6892cf013624a7b52267251994fe83dd4daf3dfaa552ff3c
 
 name:                lockers
 version:             0.1
